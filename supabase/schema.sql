@@ -1,0 +1,9 @@
+-- VELO LEAGUE: Datenmodell für die private Testversion
+create table profiles (id uuid primary key references auth.users on delete cascade, display_name text not null, created_at timestamptz default now());
+create table groups (id uuid primary key default gen_random_uuid(), name text not null, owner_id uuid references profiles(id), invite_code text unique not null, is_private boolean default true, created_at timestamptz default now());
+create table group_members (group_id uuid references groups(id) on delete cascade, user_id uuid references profiles(id) on delete cascade, role text default 'member', joined_at timestamptz default now(), primary key(group_id,user_id));
+create table rides (id uuid primary key default gen_random_uuid(), user_id uuid references profiles(id), group_id uuid references groups(id), source text check(source in ('strava','manual')) not null, external_id text, title text, distance_m integer, elevation_m integer, started_at timestamptz, points integer default 0);
+create table jersey_history (id uuid primary key default gen_random_uuid(), group_id uuid references groups(id), jersey text check(jersey in ('general','mountain','sprint','young_rider')), user_id uuid references profiles(id), earned_at timestamptz default now(), lost_at timestamptz, reason text);
+create table badges (id uuid primary key default gen_random_uuid(), user_id uuid references profiles(id), group_id uuid references groups(id), badge_key text not null, earned_at timestamptz default now());
+alter table profiles enable row level security; alter table groups enable row level security; alter table group_members enable row level security; alter table rides enable row level security; alter table jersey_history enable row level security; alter table badges enable row level security;
+-- Produktiv: Policies ergänzen, die Gruppenmitgliedern nur Daten ihrer eigenen Gruppen erlauben.

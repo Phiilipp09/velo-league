@@ -1,0 +1,10 @@
+{
+  "name": "VELO LEAGUE",
+  "short_name": "VELO LEAGUE",
+  "description": "Deine private Rennrad-Liga.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#101112",
+  "theme_color": "#101112",
+  "icons": [{ "src": "/velo-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

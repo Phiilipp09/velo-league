@@ -1,0 +1,9 @@
+import { Clock3, Mountain, Play, Route, Trophy, Zap } from 'lucide-react'
+import { Card, SectionHeading } from '../components/Ui'
+
+export function Segments({ notify }: { notify: (m: string) => void }) { return <div className="page"><div className="map-placeholder"><div className="map-grid"/><span className="map-pin pin-a">●</span><span className="map-pin pin-b">●</span><div className="map-route"/><div className="map-label">DOLOMITEN · LIVE MAP</div><button className="map-control"><Route size={18}/></button></div>
+ <SectionHeading eyebrow="KOM-SEGMENT" title="Bergwertung" />
+ <Card className="segment-card mountain-card"><div className="segment-title"><span className="segment-icon"><Mountain size={20}/></span><div><h3>Alpenstraße König</h3><p>Passstraße · Alta Badia</p></div><span className="km-badge">5,4 km</span></div><div className="segment-meta"><span><b>420</b> Höhenmeter</span><span><b>7,8%</b> Ø Steigung</span><span><b>18:32</b> Rekord</span></div><div className="mini-ranking"><div><span>1</span><b>Max</b><strong>18:32</strong></div><div className="me"><span>2</span><b>Philipp</b><strong>19:05</strong></div><div><span>3</span><b>Thomas</b><strong>20:10</strong></div></div><button onClick={() => notify('Challenge gestartet – viel Erfolg, Philipp!')} className="primary-button wide"><Play size={16} fill="currentColor"/> Challenge starten</button></Card>
+ <SectionHeading eyebrow="FLACHE ETAPPE" title="Sprint" />
+ <Card className="segment-card sprint-card"><div className="segment-title"><span className="segment-icon green"><Zap size={20}/></span><div><h3>Dorf Sprint</h3><p>Ortsausfahrt · St. Kassian</p></div><span className="km-badge">500 m</span></div><div className="sprint-results"><div><span>1</span><b>Philipp</b><strong>42 km/h</strong></div><div><span>2</span><b>Max</b><strong>40 km/h</strong></div></div></Card>
+ </div> }

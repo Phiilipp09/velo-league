@@ -1,0 +1,15 @@
+import { useState } from 'react'
+import { Crown, SlidersHorizontal, X } from 'lucide-react'
+import { filters, riders } from '../data/mockData'
+import { Card, Jersey, SectionHeading } from '../components/Ui'
+
+export function League({ onRiderSelect }: { onRiderSelect: (name: string) => void }) {
+ const [filter, setFilter] = useState('Gesamt'); const [showInfo,setShowInfo]=useState(false)
+ const sorted = filter === 'Berg' ? [...riders].sort((a,b) => a.rank === 2 ? -1 : b.rank === 2 ? 1 : a.rank-b.rank) : riders
+ return <div className="page"><div className="league-hero"><div><p className="eyebrow">FREUNDESLIGA · 4 FAHRER</p><h2>Alpine Cycling League</h2><p>Die Jagd nach dem gelben Trikot ist eröffnet.</p></div><div className="league-badge"><Crown size={24}/><span>WOCHE 31</span></div></div>
+ <div className="filter-row"><button aria-label="Filter und Erklärung öffnen" className="filter-icon-button" onClick={()=>setShowInfo(true)}><SlidersHorizontal size={17}/></button>{filters.map(x => <button key={x} onClick={() => setFilter(x)} className={filter === x ? 'filter active' : 'filter'}>{x}</button>)}</div>
+ <SectionHeading title="Rangliste" action={<span className="subtle">Live aktualisiert</span>} />
+ <Card className="ranking">{sorted.map((r, i) => <button className="rider-row" key={r.name} onClick={() => onRiderSelect(r.name)}><span className={`rank rank-${i+1}`}>#{i+1}</span><Jersey type={r.jersey || 'plain'} small/><div className="rider-name"><strong>{r.name}</strong><span>{filter === 'Gesamt' ? r.detail : filter === 'Berg' ? `${[32500, 29800, 25100, 22400][r.rank-1].toLocaleString('de-DE')} hm` : r.detail}</span></div><strong className="rider-points">{filter === 'Gesamt' ? r.points.toLocaleString('de-DE') : [980, 940, 840, 720][r.rank-1]} <small>{filter==='Berg'?'Berg-PTS':'PTS'}</small></strong></button>)}</Card>
+ {showInfo&&<FilterModal active={filter} setFilter={setFilter} onClose={()=>setShowInfo(false)}/>}</div>
+}
+function FilterModal({active,setFilter,onClose}:{active:string;setFilter:(filter:string)=>void;onClose:()=>void}){const details:Record<string,string>={Gesamt:'Sortiert nach allen Saisonpunkten: Kilometer, Höhenmeter, Segmente und Challenge-Siege.',Berg:'Sortiert nach Bergpunkten. Diese entstehen auf markierten Anstiegen und durch Höhenmeter.',Sprint:'Sortiert nach Sprintpunkten aus Sprintsegmenten und Zielankünften.',Kilometer:'Sortiert nach der in dieser Saison gefahrenen Distanz.'};return <div className="modal-backdrop" onClick={onClose}><section className="filter-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" aria-label="Filter schließen" onClick={onClose}><X size={18}/></button><p className="eyebrow">RANGLISTE VERSTEHEN</p><h2>Wertung & Sortierung</h2><p>Wähle eine Wertung. Die Rangliste aktualisiert sich direkt und zeigt immer die passende Kennzahl.</p><div className="filter-explanations">{filters.map(item=><button key={item} onClick={()=>{setFilter(item);onClose()}} className={item===active?'active':''}><strong>{item}</strong><span>{details[item]}</span></button>)}</div></section></div>}
