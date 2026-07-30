@@ -9,21 +9,13 @@ async function request(path: string, body?: Record<string, unknown>, token?: str
   const response = await fetch(`${supabaseUrl}${path}`, { method: body ? 'POST' : 'GET', headers: { apikey: supabaseKey!, Authorization: `Bearer ${token || supabaseKey!}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
   return await response.json() as AuthResponse
 }
-export async function signUpWithSupabase(email: string, password: string, name: string) {
-  return request('/auth/v1/signup', { email, password, data: { display_name: name }, options: { emailRedirectTo: window.location.origin } })
+export async function signUpWithSupabase(email: string, password: string, name: string, birthDate: string) {
+  return request('/auth/v1/signup', { email, password, data: { display_name: name, birth_date: birthDate } })
 }
 export async function signInWithSupabase(email: string, password: string) {
   const result = await request('/auth/v1/token?grant_type=password', { email, password })
   if (result.access_token) localStorage.setItem(tokenKey, result.access_token)
   return result
-}
-export async function verifyEmailOtp(email: string, token: string) {
-  const result = await request('/auth/v1/verify', { email, token, type: 'email' })
-  if (result.access_token) localStorage.setItem(tokenKey, result.access_token)
-  return result
-}
-export async function resendSignupOtp(email: string) {
-  return request('/auth/v1/resend', { type: 'signup', email })
 }
 export async function restoreSupabaseUser() {
   if (!isSupabaseConfigured) return null
