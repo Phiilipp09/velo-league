@@ -22,7 +22,7 @@ const pages: Record<Page, { label: string; icon: typeof House }> = { dashboard: 
 export default function App() {
   const [user, setUser] = useState(() => getStoredSession())
   useEffect(() => { void restoreSupabaseUser().then(remoteUser => { if (remoteUser) setUser(remoteUser.user_metadata?.display_name || remoteUser.email?.split('@')[0] || 'Rider') }) }, [])
-  const [page, setPage] = useState<Page>('dashboard')
+  const [page, setPage] = useState<Page>(() => new URLSearchParams(window.location.search).has('strava') ? 'activities' : 'dashboard')
   const [notice, setNotice] = useState('')
   const [rider, setRider] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(true)
