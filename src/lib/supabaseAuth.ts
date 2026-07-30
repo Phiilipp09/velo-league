@@ -17,6 +17,14 @@ export async function signInWithSupabase(email: string, password: string) {
   if (result.access_token) localStorage.setItem(tokenKey, result.access_token)
   return result
 }
+export async function verifyEmailOtp(email: string, token: string) {
+  const result = await request('/auth/v1/verify', { email, token, type: 'email' })
+  if (result.access_token) localStorage.setItem(tokenKey, result.access_token)
+  return result
+}
+export async function resendSignupOtp(email: string) {
+  return request('/auth/v1/resend', { type: 'signup', email })
+}
 export async function restoreSupabaseUser() {
   if (!isSupabaseConfigured) return null
   const hash = new URLSearchParams(window.location.hash.slice(1))
