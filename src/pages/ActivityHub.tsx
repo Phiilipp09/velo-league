@@ -4,7 +4,6 @@ import { Card, SectionHeading } from '../components/Ui'
 
 type Ride = { id: string; title: string; date: string; distance: number; elevation: number; duration: string; points: number; source: 'manual' | 'strava' }
 type StravaActivity = { id: number; name: string; type?: string; sport_type?: string; distance: number; total_elevation_gain: number; moving_time: number; start_date_local: string }
-const key = 'velo-test-rides'
 
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds % 3600 / 60), remaining = seconds % 60
@@ -17,7 +16,8 @@ const toRide = (activity: StravaActivity): Ride => {
   return { id: `strava-${activity.id}`, title: activity.name || 'Strava Fahrt', date: new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(activity.start_date_local)), distance, elevation, duration: formatDuration(activity.moving_time), points: Math.round(distance + elevation / 10), source: 'strava' }
 }
 
-export function ActivityHub({ notify }: { notify: (message: string) => void }) {
+export function ActivityHub({ notify, user = 'live' }: { notify: (message: string) => void; user?: string }) {
+  const storageKey = `velo-rides:${user}`
   const [connected, setConnected] = useState(false)
   const [rides, setRides] = useState<Ride[]>([])
   const [manual, setManual] = useState(false)
@@ -26,7 +26,7 @@ export function ActivityHub({ notify }: { notify: (message: string) => void }) {
   const [connectionNote, setConnectionNote] = useState('')
 
   useEffect(() => {
-    const stored = localStorage.getItem(key)
+    const stored = localStorage.getItem(storageKey)
     if (stored) setRides(JSON.parse(stored))
     const result = new URLSearchParams(window.location.search).get('strava')
     if (result) {
@@ -40,7 +40,7 @@ export function ActivityHub({ notify }: { notify: (message: string) => void }) {
   const add = (ride: Ride) => {
     const next = [ride, ...rides]
     setRides(next)
-    localStorage.setItem(key, JSON.stringify(next))
+    localStorage.setItem(storageKey, JSON.stringify(next))
     setManual(false)
     notify(`Fahrt eingetragen · +${ride.points} Saisonpunkte`)
   }
@@ -54,7 +54,7 @@ export function ActivityHub({ notify }: { notify: (message: string) => void }) {
       const imported = (data.activities as StravaActivity[]).filter(activity => ['Ride', 'EBikeRide', 'GravelRide', 'MountainBikeRide', 'Velomobile'].includes(activity.sport_type || activity.type || '')).map(toRide)
       setRides(current => {
         const next = [...imported, ...current.filter(ride => !imported.some(item => item.id === ride.id))]
-        localStorage.setItem(key, JSON.stringify(next))
+        localStorage.setItem(storageKey, JSON.stringify(next))
         return next
       })
       notify(imported.length ? `${imported.length} Strava-Fahrten importiert.` : 'Keine neuen Radfahrten bei Strava gefunden.')

@@ -23,18 +23,19 @@ const pages: Record<Page, { label: string; icon: typeof House }> = { dashboard: 
 export default function App() {
   const [user, setUser] = useState(() => getStoredSession())
   const [profileSetup, setProfileSetup] = useState(() => { const saved = getStoredSession(); return Boolean(saved) && !localStorage.getItem(`velo-profile-complete:${saved}`) })
-  useEffect(() => { void restoreSupabaseUser().then(remoteUser => { if (remoteUser) { const name = remoteUser.user_metadata?.display_name || remoteUser.email?.split('@')[0] || 'Rider'; setUser(name); setProfileSetup(!localStorage.getItem(`velo-profile-complete:${name}`)) } }) }, [])
+  const [demoMode, setDemoMode] = useState(() => localStorage.getItem('velo-demo-mode') === 'true')
+  useEffect(() => { void restoreSupabaseUser().then(remoteUser => { if (remoteUser) { const name = remoteUser.user_metadata?.display_name || remoteUser.email?.split('@')[0] || 'Rider'; localStorage.removeItem('velo-demo-mode'); setDemoMode(false); setUser(name); setProfileSetup(!localStorage.getItem(`velo-profile-complete:${name}`)) } }) }, [])
   const [page, setPage] = useState<Page>(() => new URLSearchParams(window.location.search).has('strava') ? 'activities' : 'dashboard')
   const [notice, setNotice] = useState('')
   const [rider, setRider] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(true)
   const [notifications, setNotifications] = useState(false)
   const [performance, setPerformance] = useState(false)
-  const [emptyStart] = useState(() => localStorage.getItem('velo-new-user') === 'true')
-  const [notes, setNotes] = useState<Note[]>(() => { const saved = localStorage.getItem('velo-notifications'); return saved ? JSON.parse(saved) : defaultNotes })
+  const emptyStart = !demoMode
+  const [notes, setNotes] = useState<Note[]>(() => { const isDemo = localStorage.getItem('velo-demo-mode') === 'true'; const saved = localStorage.getItem('velo-notifications'); return isDemo ? (saved ? JSON.parse(saved) : defaultNotes) : [] })
   const deleteNote = (id: number) => setNotes(current => { const next = current.filter(note => note.id !== id); localStorage.setItem('velo-notifications', JSON.stringify(next)); return next })
   const showNotice = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2500) }
-  if (!user) return <AuthGate onAuthenticated={name => { setUser(name); setProfileSetup(!localStorage.getItem(`velo-profile-complete:${name}`)) }}/>
+  if (!user) return <AuthGate onAuthenticated={name => { const demo = localStorage.getItem('velo-demo-mode') === 'true'; setDemoMode(demo); setNotes(demo ? defaultNotes : []); setUser(name); setProfileSetup(!localStorage.getItem(`velo-profile-complete:${name}`)) }}/>
   if (profileSetup) return <ProfileSetup user={user} onComplete={() => setProfileSetup(false)}/>
   return <div className="app-shell"><Sidebar page={page} setPage={setPage}/><main className="main-content"><header className="topbar"><div><p className="eyebrow">SAISON 2026 · ALPINE DIVISION</p><h1>{pages[page].label}</h1></div><div className="top-actions"><button className="icon-button notification-button" onClick={() => setNotifications(!notifications)} aria-label="Benachrichtigungen"><Bell size={19}/>{notes.length > 0 && <i/>}</button><button className="icon-button" onClick={() => setPerformance(true)} aria-label="Leistungsanalyse"><BarChart3 size={19}/></button><button className="avatar" onClick={() => setPage('profile')} aria-label="Profil">{user.slice(0, 1).toUpperCase()}</button></div></header>{page === 'dashboard' && <Dashboard empty={emptyStart} onNavigate={setPage}/>} {page === 'group' && <GroupHub notify={showNotice} onNavigate={setPage}/>} {page === 'league' && <League empty={emptyStart} onNavigate={setPage} onRiderSelect={setRider}/>} {page === 'activities' && <ActivityHub notify={showNotice}/>} {page === 'calendar' && <SeasonCalendar notify={showNotice} onNavigate={setPage}/>} {page === 'segments' && <Segments empty={emptyStart} notify={showNotice}/>} {page === 'challenges' && <Challenges empty={emptyStart} notify={showNotice}/>} {page === 'profile' && <Profile/>}</main>{notice && <div className="toast">{notice}</div>}{rider && <RiderDetail name={rider} onClose={() => setRider(null)}/>} {performance && <PerformanceInsights onClose={() => setPerformance(false)}/>} {notifications && <Notifications notes={notes} onDelete={deleteNote} onClose={() => setNotifications(false)} onNavigate={setPage}/>} {onboarding && <Onboarding onSkip={() => setOnboarding(false)} onFinish={() => { setOnboarding(false); setPage('group'); showNotice('Willkommen in deiner ersten Liga!') }}/>}</div>
 }
