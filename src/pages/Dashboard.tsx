@@ -1,9 +1,9 @@
 import { ArrowRight, ChevronRight, Crown, Flame, Mountain, Trophy } from 'lucide-react'
 import type { Page } from '../App'
-import { Card, Jersey, SectionHeading } from '../components/Ui'
+import { Card, EmptyGuide, Jersey, SectionHeading } from '../components/Ui'
 import type { ElementType } from 'react'
 
-export function Dashboard({ onNavigate }: { onNavigate: (p: Page) => void }) { return <div className="page dashboard-page">
+export function Dashboard({ onNavigate, empty = false }: { onNavigate: (p: Page) => void; empty?: boolean }) { if(empty)return <div className="page dashboard-page"><EmptyGuide icon={<Trophy size={24}/>} eyebrow="DEIN START" title="Deine Saison kann beginnen" text="Synchronisiere deine erste Fahrt oder tritt einer Gruppe bei. Danach erscheinen hier deine echten Kilometer, Höhenmeter und Trikotziele." preview={<div className="guide-ranking"><div><b>0</b><span>Saisonpunkte</span><strong>NOCH OFFEN</strong></div><div><b>1.</b><span>Fahrt hinzufügen</span><strong>LOS GEHT'S</strong></div></div>} action={<button className="primary-button" onClick={()=>onNavigate('activities')}>Erste Fahrt hinzufügen</button>}/></div>; return <div className="page dashboard-page">
   <div className="dashboard-grid">
     <Card className="leader-card"><div className="leader-noise"/><div className="leader-copy"><p className="eyebrow">AKTUELLES TRIKOT</p><h2>Gelbes Trikot</h2><p className="muted">Du führst die Alpine Cycling League.</p><div className="leader-name"><Jersey /><div><strong>Philipp</strong><span>Gesamtführender</span></div></div></div><div className="leader-points"><strong>2.450</strong><span>Saisonpunkte</span><em><Crown size={14}/> RANG #1</em></div></Card>
     <Card className="challenge-hero"><div className="route-lines"/><div className="challenge-content"><p className="eyebrow">NÄCHSTE HERAUSFORDERUNG</p><h2><Mountain size={22}/> Alpenstraße König</h2><div className="challenge-numbers"><span><b>5,4</b> km</span><span><b>420</b> hm</span><span><b>19:05</b> deine Zeit</span></div><button onClick={() => onNavigate('segments')} className="primary-button">Segment ansehen <ArrowRight size={17}/></button></div><div className="best-time"><span>BESTE ZEIT</span><b>18:32</b><small>Max · 2026</small></div></Card>
