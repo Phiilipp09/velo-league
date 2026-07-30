@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Activity, BarChart3, Bell, CalendarDays, Flag, House, Map, Trophy, UserRound, Users } from 'lucide-react'
 import { Dashboard } from './pages/Dashboard'
 import { League } from './pages/League'
@@ -14,12 +14,14 @@ import { Onboarding } from './components/Onboarding'
 import { defaultNotes, type Note, Notifications } from './components/Notifications'
 import { AuthGate, getStoredSession } from './components/AuthGate'
 import { PerformanceInsights } from './components/PerformanceInsights'
+import { restoreSupabaseUser } from './lib/supabaseAuth'
 
 export type Page = 'dashboard' | 'group' | 'league' | 'activities' | 'calendar' | 'segments' | 'challenges' | 'profile'
 const pages: Record<Page, { label: string; icon: typeof House }> = { dashboard: { label: 'Dashboard', icon: House }, group: { label: 'Gruppe', icon: Users }, league: { label: 'Liga', icon: Trophy }, activities: { label: 'Fahrten', icon: Activity }, calendar: { label: 'Kalender', icon: CalendarDays }, segments: { label: 'Segmente', icon: Map }, challenges: { label: 'Challenges', icon: Flag }, profile: { label: 'Profil', icon: UserRound } }
 
 export default function App() {
   const [user, setUser] = useState(() => getStoredSession())
+  useEffect(() => { void restoreSupabaseUser().then(remoteUser => { if (remoteUser) setUser(remoteUser.user_metadata?.display_name || remoteUser.email?.split('@')[0] || 'Rider') }) }, [])
   const [page, setPage] = useState<Page>('dashboard')
   const [notice, setNotice] = useState('')
   const [rider, setRider] = useState<string | null>(null)
