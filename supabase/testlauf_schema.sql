@@ -70,6 +70,7 @@ alter table public.profiles add column if not exists height_cm integer;
 alter table public.profiles add column if not exists weight_kg numeric(5,1);
 alter table public.profiles add column if not exists rider_level text default 'Fortgeschritten';
 alter table public.profiles add column if not exists updated_at timestamptz not null default now();
+alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 alter table public.rides add column if not exists moving_time_s integer;
 alter table public.rides add column if not exists created_at timestamptz not null default now();
 -- Die erste Testversion hatte bereits eine Challenges-Tabelle, allerdings
@@ -81,6 +82,17 @@ alter table public.challenges add column if not exists goal text;
 alter table public.challenges add column if not exists reward text;
 alter table public.challenges add column if not exists status text default 'pending';
 alter table public.challenges add column if not exists ends_at date;
+
+-- Reparatur fÃ¼r die erste Test-Schema-Version: sie verwendete noch eine
+-- andere Rollenbezeichnung und blockierte dadurch die Gruppenerstellung.
+alter table public.group_members drop constraint if exists group_members_role_check;
+alter table public.group_members add constraint group_members_role_check check (role in ('admin', 'member'));
+insert into public.group_members (group_id, user_id, role)
+select groups.id, groups.owner_id, 'admin'
+from public.groups as groups
+left join public.group_members as members on members.group_id = groups.id and members.user_id = groups.owner_id
+where members.user_id is null
+on conflict (group_id, user_id) do nothing;
 
 create or replace function public.is_group_member(target_group_id uuid)
 returns boolean language sql stable security definer set search_path = public as $$

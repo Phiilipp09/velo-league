@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CheckCircle2, ChevronRight, Link2, LoaderCircle, Plus, ShieldCheck, Unlink, X } from 'lucide-react'
 import { Card, SectionHeading } from '../components/Ui'
 import { getRides, saveRide, type LiveRide } from '../lib/supabaseData'
+import { announceLiveDataChange } from '../lib/liveSeason'
 
 type Ride = { id: string; title: string; date: string; distance: number; elevation: number; duration: string; points: number; source: 'manual' | 'strava' }
 type StravaActivity = { id: number; name: string; type?: string; sport_type?: string; distance: number; total_elevation_gain: number; moving_time: number; start_date_local: string }

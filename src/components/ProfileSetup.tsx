@@ -11,7 +11,7 @@ export function ProfileSetup({ user, userId, onComplete }: { user: string; userI
   const finish = async () => {
     setSaving(true); setError('')
     try {
-      if (userId) await saveProfile({ id: userId, display_name: user, birth_date: profile.birthDate || null, gender: profile.gender || null, height_cm: profile.height ? Number(profile.height) : null, weight_kg: profile.weight ? Number(profile.weight) : null, rider_level: profile.level })
+      if (userId) await saveProfile({ id: userId, display_name: user, birth_date: profile.birthDate || null, gender: profile.gender || null, height_cm: profile.height ? Number(profile.height) : null, weight_kg: profile.weight ? Number(profile.weight) : null, rider_level: profile.level, onboarding_completed: true })
       localStorage.setItem(`velo-rider-profile:${user}`, JSON.stringify(profile)); localStorage.setItem(`velo-profile-complete:${user}`, 'true'); localStorage.removeItem('velo-profile-draft'); onComplete()
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Profil konnte nicht gespeichert werden.') } finally { setSaving(false) }
   }
