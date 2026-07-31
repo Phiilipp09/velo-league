@@ -10,7 +10,9 @@ export const storeSupabaseAccessToken = (token: string, persistent = true) => (p
 type AuthResponse = { access_token?: string; user?: { id: string; email?: string; user_metadata?: { display_name?: string } }; error?: { message?: string } }
 async function request(path: string, body?: Record<string, unknown>, token?: string) {
   const response = await fetch(`${supabaseUrl}${path}`, { method: body ? 'POST' : 'GET', headers: { apikey: supabaseKey!, Authorization: `Bearer ${token || supabaseKey!}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
-  return await response.json() as AuthResponse
+  const result = await response.json().catch(() => ({})) as AuthResponse & { msg?: string; message?: string }
+  if (!response.ok && !result.error) result.error = { message: result.msg || result.message || 'Anmeldung nicht möglich.' }
+  return result
 }
 export async function signUpWithSupabase(email: string, password: string, name: string, birthDate: string) {
   const result = await request('/auth/v1/signup', { email, password, data: { display_name: name, birth_date: birthDate } })
