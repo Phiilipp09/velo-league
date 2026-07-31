@@ -3,6 +3,9 @@ const supabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.V
 const tokenKey = 'velo-supabase-access-token'
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey)
+export const getSupabaseAccessToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey)
+export const getSupabaseConfig = () => ({ url: supabaseUrl, key: supabaseKey })
+export const storeSupabaseAccessToken = (token: string, persistent = true) => (persistent ? localStorage : sessionStorage).setItem(tokenKey, token)
 
 type AuthResponse = { access_token?: string; user?: { id: string; email?: string; user_metadata?: { display_name?: string } }; error?: { message?: string } }
 async function request(path: string, body?: Record<string, unknown>, token?: string) {
@@ -10,11 +13,13 @@ async function request(path: string, body?: Record<string, unknown>, token?: str
   return await response.json() as AuthResponse
 }
 export async function signUpWithSupabase(email: string, password: string, name: string, birthDate: string) {
-  return request('/auth/v1/signup', { email, password, data: { display_name: name, birth_date: birthDate } })
+  const result = await request('/auth/v1/signup', { email, password, data: { display_name: name, birth_date: birthDate } })
+  if (result.access_token) storeSupabaseAccessToken(result.access_token)
+  return result
 }
 export async function signInWithSupabase(email: string, password: string) {
   const result = await request('/auth/v1/token?grant_type=password', { email, password })
-  if (result.access_token) localStorage.setItem(tokenKey, result.access_token)
+  if (result.access_token) storeSupabaseAccessToken(result.access_token)
   return result
 }
 export async function restoreSupabaseUser() {
