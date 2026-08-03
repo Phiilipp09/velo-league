@@ -34,6 +34,9 @@ export function useLiveSeason(userId?: string) {
     try {
       const [nextGroups, allRides] = await Promise.all([getGroups(), getRides()])
       setGroups(nextGroups)
+      const active = nextGroups.find(group => group.id === localStorage.getItem(`velo-active-group:${userId}`)) || nextGroups[0]
+      if (active) localStorage.setItem(`velo-active-group:${userId}`, active.id)
+      else localStorage.removeItem(`velo-active-group:${userId}`)
       setStats(calculateSeasonStats(allRides.filter(ride => ride.user_id === userId)))
     } finally { setLoading(false) }
   }, [userId])

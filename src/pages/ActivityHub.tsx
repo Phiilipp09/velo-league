@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronRight, Download, Link2, LoaderCircle, Plus, ShieldCheck, Trash2, Unlink, X } from 'lucide-react'
 import { Card, SectionHeading } from '../components/Ui'
-import { deleteRide, getOwnRides, saveRide, syncJerseyHistory, type LiveRide } from '../lib/supabaseData'
+import { deleteRide, getOwnRides, resolveActiveGroupId, saveRide, syncJerseyHistory, type LiveRide } from '../lib/supabaseData'
 import { announceLiveDataChange } from '../lib/liveSeason'
 import { getSupabaseAccessToken } from '../lib/supabaseAuth'
 type Ride = { id: string; externalId?: string | null; title: string; distance: number; elevation: number; movingSeconds?: number | null; points: number; source: 'manual' | 'strava' }
@@ -14,7 +14,7 @@ export function ActivityHub({ notify, userId }: { notify: (message: string) => v
   const load = async () => { if (userId) setRides((await getOwnRides(userId)).map(mapRide)) }
   const status = async () => { const response = await fetch('/api/strava/status', { headers: token() }); const data = await response.json(); setConnected(Boolean(data.connected)) }
   useEffect(() => { void load(); void status() }, [userId])
-  const save = async (title: string, distance: number, elevation: number, source: 'manual' | 'strava' = 'manual', extra: Partial<LiveRide> = {}) => { if (!userId) return; const points = Math.round(distance + elevation / 10); const groupId = localStorage.getItem(`velo-active-group:${userId}`); const ride = await saveRide({ user_id: userId, group_id: groupId, source, title, distance_m: Math.round(distance * 1000), elevation_m: elevation, points, started_at: new Date().toISOString(), ...extra }); if (groupId) void syncJerseyHistory(groupId).catch(() => undefined); return ride }
+  const save = async (title: string, distance: number, elevation: number, source: 'manual' | 'strava' = 'manual', extra: Partial<LiveRide> = {}) => { if (!userId) return; const points = Math.round(distance + elevation / 10); const groupId = await resolveActiveGroupId(userId); const ride = await saveRide({ user_id: userId, group_id: groupId, source, title, distance_m: Math.round(distance * 1000), elevation_m: elevation, points, started_at: new Date().toISOString(), ...extra }); if (groupId) void syncJerseyHistory(groupId).catch(() => undefined); return ride }
   const importStrava = async () => {
     if (!userId) return; setImporting(true)
     try {

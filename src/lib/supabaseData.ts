@@ -17,8 +17,11 @@ async function db<T>(path: string, options: RequestInit = {}, prefer?: string): 
   if (!isSupabaseConfigured || !url || !key || !token) throw new Error('Bitte melde dich erneut an.')
   const response = await fetch(`${url}/rest/v1/${path}`, { ...options, headers: { apikey: key, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}), ...(options.headers || {}) } })
   if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.message || body.hint || 'Speichern fehlgeschlagen.') }
+  // PostgREST antwortet bei `return=minimal` je nach Umgebung mit 201 oder 204
+  // und ohne Body. Das ist trotzdem ein erfolgreicher Speichervorgang.
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  const body = await response.text()
+  return (body ? JSON.parse(body) : undefined) as T
 }
 
 export async function saveProfile(profile: LiveProfile) {
@@ -27,6 +30,15 @@ export async function saveProfile(profile: LiveProfile) {
 }
 export const getProfile = async (id: string) => (await db<LiveProfile[]>(`profiles?id=eq.${encodeURIComponent(id)}&select=*`))[0] || null
 export const getGroups = () => db<LiveGroup[]>('groups?select=*&order=created_at.desc')
+export async function resolveActiveGroupId(userId: string) {
+  const key = `velo-active-group:${userId}`
+  const saved = localStorage.getItem(key)
+  const groups = await getGroups()
+  const active = groups.find(group => group.id === saved) || groups[0]
+  if (active) localStorage.setItem(key, active.id)
+  else localStorage.removeItem(key)
+  return active?.id || null
+}
 export async function createGroup(name: string, ownerId: string) {
   const rows = await db<LiveGroup[]>('groups', { method: 'POST', body: JSON.stringify({ name, owner_id: ownerId }) }, 'return=representation')
   const group = rows[0]
