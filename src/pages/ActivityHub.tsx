@@ -8,6 +8,7 @@ type Ride = { id: string; externalId?: string | null; title: string; distance: n
 type StravaActivity = { id: number; name?: string; type?: string; sport_type?: string; distance?: number; total_elevation_gain?: number; moving_time?: number; start_date?: string }
 const mapRide = (ride: LiveRide): Ride => ({ id: ride.id, externalId: ride.external_id, title: ride.title, distance: ride.distance_m / 1000, elevation: ride.elevation_m, movingSeconds: ride.moving_time_s, points: ride.points, source: ride.source })
 const cyclingTypes = new Set(['Ride', 'VirtualRide', 'EBikeRide', 'GravelRide'])
+const seasonStart = new Date('2026-08-01T00:00:00.000Z')
 export function ActivityHub({ notify, userId }: { notify: (message: string) => void; userId?: string }) {
   const [rides, setRides] = useState<Ride[]>([]), [connected, setConnected] = useState(false), [manual, setManual] = useState(false), [detail, setDetail] = useState<Ride | null>(null), [importing, setImporting] = useState(false)
   const token = () => ({ Authorization: `Bearer ${getSupabaseAccessToken() || ''}` })
@@ -20,7 +21,7 @@ export function ActivityHub({ notify, userId }: { notify: (message: string) => v
     try {
       const response = await fetch('/api/strava/activities', { headers: token() }); const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Strava-Fahrten konnten nicht geladen werden.')
-      const existing = new Set(rides.map(ride => ride.externalId).filter(Boolean)); const activities = (data.activities as StravaActivity[]).filter(activity => cyclingTypes.has(activity.type || '') || cyclingTypes.has(activity.sport_type || ''))
+      const existing = new Set(rides.map(ride => ride.externalId).filter(Boolean)); const activities = (data.activities as StravaActivity[]).filter(activity => (cyclingTypes.has(activity.type || '') || cyclingTypes.has(activity.sport_type || '')) && new Date(activity.start_date || 0) >= seasonStart)
       let imported = 0
       for (const activity of activities) {
         const externalId = String(activity.id); if (existing.has(externalId)) continue
