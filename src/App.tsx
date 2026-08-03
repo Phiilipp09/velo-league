@@ -17,7 +17,7 @@ import { AuthGate, getStoredSession } from './components/AuthGate'
 import { PerformanceInsights } from './components/PerformanceInsights'
 import { restoreSupabaseUser } from './lib/supabaseAuth'
 import { ProfileSetup } from './components/ProfileSetup'
-import { getProfile } from './lib/supabaseData'
+import { deleteNotification, getNotifications, getProfile } from './lib/supabaseData'
 import { useLiveSeason } from './lib/liveSeason'
 
 export type Page = 'dashboard' | 'group' | 'league' | 'activities' | 'calendar' | 'segments' | 'challenges' | 'profile'
@@ -33,7 +33,8 @@ export default function App() {
   const [notes, setNotes] = useState<Note[]>(() => { const saved = localStorage.getItem('velo-notifications'); return localStorage.getItem('velo-demo-mode') === 'true' ? (saved ? JSON.parse(saved) : defaultNotes) : [] })
   const liveSeason = useLiveSeason(userId)
   useEffect(() => { void restoreSupabaseUser().then(async remoteUser => { if (remoteUser) { const name = getStoredSession() || remoteUser.user_metadata?.display_name || remoteUser.email?.split('@')[0] || 'Rider'; localStorage.removeItem('velo-demo-mode'); setDemoMode(false); setNotes([]); setUserId(remoteUser.id); setUser(name); const profile = await getProfile(remoteUser.id).catch(() => null); const alreadyConfigured = Boolean(profile?.onboarding_completed || profile?.gender || profile?.height_cm || profile?.weight_kg || profile?.rider_level); setProfileSetup(profile ? !alreadyConfigured : !localStorage.getItem(`velo-profile-complete:${name}`)) } }) }, [])
-  const deleteNote = (id: number) => setNotes(current => { const next = current.filter(note => note.id !== id); localStorage.setItem('velo-notifications', JSON.stringify(next)); return next })
+  useEffect(() => { if (!userId || demoMode) return; const refresh = () => void getNotifications(userId).then(items => setNotes(items.map(item => ({ id: item.id, page: item.type === 'event' ? 'calendar' : item.type === 'challenge' ? 'challenges' : 'group', kind: item.type === 'challenge' ? 'duel' : 'group', title: item.title, text: item.body || 'Gerade eben' })))).catch(() => undefined); refresh(); const timer = window.setInterval(refresh, 15000); return () => window.clearInterval(timer) }, [userId, demoMode])
+  const deleteNote = (id: string | number) => { if (typeof id === 'string' && !demoMode) void deleteNotification(id).catch(() => undefined); setNotes(current => { const next = current.filter(note => note.id !== id); localStorage.setItem('velo-notifications', JSON.stringify(next)); return next }) }
   const showNotice = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(''), 2500) }
   if (!user) return <AuthGate onAuthenticated={(name, id) => { const demo = localStorage.getItem('velo-demo-mode') === 'true'; setDemoMode(demo); setNotes(demo ? defaultNotes : []); setUserId(id); setUser(name); if (!id) { setProfileSetup(false); return } void getProfile(id).then(profile => { const configured = Boolean(profile?.onboarding_completed || profile?.gender || profile?.height_cm || profile?.weight_kg || profile?.rider_level); setProfileSetup(!configured) }).catch(() => setProfileSetup(!localStorage.getItem(`velo-profile-complete:${name}`))) }}/>
   if (profileSetup) return <ProfileSetup user={user} userId={userId} onComplete={() => setProfileSetup(false)}/>

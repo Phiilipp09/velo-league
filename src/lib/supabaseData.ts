@@ -69,6 +69,7 @@ export async function setEventRsvp(eventId: string, userId: string, status: Even
 export const getNotifications = (userId: string) => db<LiveNotification[]>(`notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null&select=*&order=created_at.desc`)
 export async function createNotification(note: Omit<LiveNotification, 'id' | 'created_at' | 'read_at'>) { await db('notifications', { method: 'POST', body: JSON.stringify(note) }, 'return=minimal') }
 export async function deleteNotification(id: string) { await db(`notifications?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, 'return=minimal') }
+export const notifyGroupEvent = (eventId: string) => db('rpc/notify_group_event', { method: 'POST', body: JSON.stringify({ target_event_id: eventId }) }, 'return=minimal')
 export async function getJerseyHistory(groupId: string) {
   const rows = await db<(Omit<JerseyHistory, 'started_at' | 'ended_at'> & { earned_at: string; lost_at?: string | null })[]>(`jersey_history?group_id=eq.${encodeURIComponent(groupId)}&select=*,profiles(display_name)&order=earned_at.desc`)
   return rows.map(row => ({ ...row, started_at: row.earned_at, ended_at: row.lost_at }))
