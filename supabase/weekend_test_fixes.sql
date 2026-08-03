@@ -6,6 +6,10 @@ alter table public.challenges add column if not exists challenge_type text;
 update public.challenges set challenge_type = 'free' where challenge_type is null;
 alter table public.challenges alter column challenge_type set default 'free';
 alter table public.challenges alter column challenge_type set not null;
+-- Statuswerte der App: auch eine vom Ersteller abgebrochene Challenge ist gültig.
+alter table public.challenges drop constraint if exists challenges_status_check;
+alter table public.challenges add constraint challenges_status_check
+  check (status in ('pending', 'accepted', 'declined', 'cancelled', 'completed'));
 -- Alte Testdatenbank-Versionen hatten die Spalte mit einem Leerzeichen im Namen.
 -- Sie darf keine neue Challenge mehr blockieren.
 do $$

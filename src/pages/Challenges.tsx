@@ -12,7 +12,7 @@ export function Challenges({ notify, userId, groups, onNavigate }: { notify: (me
   const load = async () => { if (!active) return; const [challenges, groupMembers] = await Promise.all([getChallenges(active.id), getGroupMembers(active.id)]); setItems(challenges); setMembers(groupMembers) }
   useEffect(() => { void load() }, [active?.id])
   if (!active) return <div className="page"><EmptyGuide icon={<Swords size={24}/>} eyebrow="CHALLENGES" title="Dein erstes Duell beginnt hier" text="Erstelle zuerst eine Gruppe und lade mindestens einen Freund ein." preview={<div className="guide-challenge"><b>Du</b><i/><b>Freund</b></div>} action={<button className="primary-button" onClick={() => onNavigate('group')}>Gruppe öffnen</button>}/></div>
-  const visible = tab === 'overview' ? items : items.filter(item => tab === 'pending' ? item.status === 'pending' : item.status === 'accepted')
+  const visible = items.filter(item => tab === 'overview' ? item.status === 'pending' || item.status === 'accepted' : tab === 'pending' ? item.status === 'pending' : item.status === 'accepted')
   const create = async (title: string, goal: string, opponent: string) => {
     if (!userId || !opponent) return
     setError('')
