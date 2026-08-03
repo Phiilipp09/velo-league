@@ -1,6 +1,6 @@
 import { getSupabaseAccessToken, getSupabaseConfig, isSupabaseConfigured } from './supabaseAuth'
 
-export type LiveProfile = { id: string; display_name: string; birth_date?: string | null; gender?: string | null; height_cm?: number | null; weight_kg?: number | null; rider_level?: string | null; onboarding_completed?: boolean }
+export type LiveProfile = { id: string; display_name: string; avatar?: string | null; birth_date?: string | null; gender?: string | null; height_cm?: number | null; weight_kg?: number | null; rider_level?: string | null; onboarding_completed?: boolean }
 export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
 export type LiveMember = { user_id: string; role: string; profiles?: { display_name?: string; birth_date?: string | null } | null }
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; external_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
