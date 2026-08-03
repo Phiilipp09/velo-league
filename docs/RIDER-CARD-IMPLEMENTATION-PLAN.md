@@ -21,12 +21,18 @@ Die Fahrerkarte ist die sportliche Identität eines Fahrers innerhalb einer Liga
 - Karrierebereich mit aktueller Live-Saison und allen bereits gespeicherten Saisonarchiven.
 - Die Punkteentwicklung wird ausschließlich aus Live- und Archivdaten erzeugt.
 
+## Phase 3
+
+- Gruppen-Admins können Saisonname, Jahr und Enddatum verwalten.
+- Der Saisonabschluss erzeugt für jedes Mitglied eine dauerhafte Saisonkarte.
+- Punkte, Challenge-Siege, Kilometer, Höhenmeter und die Titel Champion, Bergkönig und Young Rider werden eingefroren.
+- Alle Gruppenmitglieder erhalten eine Benachrichtigung und sehen die Archivkarte im Profil.
+
 ## Noch offen
 
-1. Beim Saisonabschluss wird eine Saisonkarte dauerhaft als Snapshot gespeichert.
-2. Hall of Fame und gruppenweite Titelhistorie.
-3. PNG-/Story-Export und Teilen.
-4. Echte Teams als eigenes Liga-Modul.
+1. Hall of Fame und gruppenweite Titelhistorie.
+2. PNG-/Story-Export und Teilen.
+3. Echte Teams als eigenes Liga-Modul.
 
 ## Datenquellen
 

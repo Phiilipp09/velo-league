@@ -1,7 +1,7 @@
 import { getSupabaseAccessToken, getSupabaseConfig, isSupabaseConfigured } from './supabaseAuth'
 
 export type LiveProfile = { id: string; display_name: string; avatar?: string | null; team_name?: string | null; birth_date?: string | null; gender?: string | null; height_cm?: number | null; weight_kg?: number | null; rider_level?: string | null; onboarding_completed?: boolean }
-export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
+export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string; season_name?: string | null; season_year?: number | null; season_ends_at?: string | null; season_closed_at?: string | null }
 export type LiveMember = { user_id: string; role: string; rider_number?: number | null; profiles?: { display_name?: string; birth_date?: string | null; team_name?: string | null } | null }
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; external_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
 export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; winner_id?: string | null; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
@@ -50,6 +50,11 @@ export async function updateGroupName(groupId: string, name: string) {
   const rows = await db<LiveGroup[]>(`groups?id=eq.${encodeURIComponent(groupId)}`, { method: 'PATCH', body: JSON.stringify({ name }) }, 'return=representation')
   return rows[0]
 }
+export async function updateGroupSeason(groupId: string, input: { season_name?: string | null; season_year?: number | null; season_ends_at?: string | null }) {
+  const rows = await db<LiveGroup[]>(`groups?id=eq.${encodeURIComponent(groupId)}`, { method: 'PATCH', body: JSON.stringify(input) }, 'return=representation')
+  return rows[0]
+}
+export const closeGroupSeason = (groupId: string, seasonYear: number, seasonName: string) => db<string>('rpc/close_group_season', { method: 'POST', body: JSON.stringify({ target_group_id: groupId, target_year: seasonYear, target_name: seasonName }) }, 'return=representation')
 export const getGroupMembers = (groupId: string) => db<LiveMember[]>(`group_members?group_id=eq.${encodeURIComponent(groupId)}&select=user_id,role,rider_number,profiles(display_name,birth_date,team_name)&order=joined_at.asc`)
 export async function joinGroup(inviteCode: string) { return db<string>('rpc/join_group_by_invite', { method: 'POST', body: JSON.stringify({ code: inviteCode }) }, 'return=representation') }
 export const getRides = (groupId?: string) => db<LiveRide[]>(`rides?select=*&order=started_at.desc${groupId ? `&group_id=eq.${encodeURIComponent(groupId)}` : ''}`)
