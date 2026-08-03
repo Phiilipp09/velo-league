@@ -45,6 +45,10 @@ export async function createGroup(name: string, ownerId: string) {
   await db('group_members', { method: 'POST', body: JSON.stringify({ group_id: group.id, user_id: ownerId, role: 'admin' }) }, 'return=minimal')
   return group
 }
+export async function updateGroupName(groupId: string, name: string) {
+  const rows = await db<LiveGroup[]>(`groups?id=eq.${encodeURIComponent(groupId)}`, { method: 'PATCH', body: JSON.stringify({ name }) }, 'return=representation')
+  return rows[0]
+}
 export const getGroupMembers = (groupId: string) => db<LiveMember[]>(`group_members?group_id=eq.${encodeURIComponent(groupId)}&select=user_id,role,profiles(display_name,birth_date)&order=joined_at.asc`)
 export async function joinGroup(inviteCode: string) { return db<string>('rpc/join_group_by_invite', { method: 'POST', body: JSON.stringify({ code: inviteCode }) }, 'return=representation') }
 export const getRides = (groupId?: string) => db<LiveRide[]>(`rides?select=*&order=started_at.desc${groupId ? `&group_id=eq.${encodeURIComponent(groupId)}` : ''}`)
