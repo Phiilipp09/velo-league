@@ -1,26 +1,32 @@
-# VELO LEAGUE – Fahrerkarte
+# VELO LEAGUE - Fahrerkarte
 
 ## Zielbild
 
-Die Fahrerkarte ist die sportliche Identität eines Fahrers innerhalb einer Liga. Sie nutzt nur echte, bereits vorhandene Gruppen-, Fahrten-, Punkte- und Trikotdaten. Es gibt keine kaufbaren Vorteile.
+Die Fahrerkarte ist die sportliche Identität eines Fahrers innerhalb einer Liga. Sie verwendet nur echte Gruppen-, Fahrten-, Punkte- und Trikotdaten. Es gibt keine kaufbaren Vorteile.
 
-## Phase 1 (dieser Schritt)
+## Phase 1
 
-- responsive Hauptkarte auf der Profilseite
-- eindeutige Startnummer je Liga
-- aktuelles Trikot als Farbwelt
-- echte Saisonwerte: Punkte, Fahrten, Kilometer und Höhenmeter
-- Profilbild als Initialen-Avatar, bis Nutzerfotos ergänzt werden
-- optionaler Teamname im Profil; ohne Angabe erscheint „Independent Riders“
-- Datenfundament für spätere Saison-Snapshots
+- Responsive Hauptkarte auf der Profilseite.
+- Eindeutige Startnummer je Liga.
+- Aktuelles Trikot als Farbwelt.
+- Echte Saisonwerte: Punkte, Siege, Kilometer und Höhenmeter.
+- Initialen-Avatar, bis Nutzerfotos ergänzt werden.
+- Optionaler Teamname im Profil; ohne Angabe erscheint "Independent Riders".
+- Datenfundament für spätere Saison-Snapshots.
 
-## Spätere Phasen
+## Phase 2
 
-1. Abschluss einer Saison erzeugt dauerhaft eine Saisonkarte.
-2. Karriereansicht, Hall of Fame und Titelhistorie.
-3. Spezielle Trikotkarten, die sich aus den aktuellen Wertungen ableiten.
-4. PNG-/Story-Export und Teilen.
-5. Echte Teams als eigenes Liga-Modul, falls gewünscht.
+- Trikot-Spezialkarten erscheinen automatisch, wenn ein Fahrer eine aktuelle Wertung anführt.
+- Jede Spezialkarte ist öffnbar und erklärt Wertung und Liga.
+- Karrierebereich mit aktueller Live-Saison und allen bereits gespeicherten Saisonarchiven.
+- Die Punkteentwicklung wird ausschließlich aus Live- und Archivdaten erzeugt.
+
+## Noch offen
+
+1. Beim Saisonabschluss wird eine Saisonkarte dauerhaft als Snapshot gespeichert.
+2. Hall of Fame und gruppenweite Titelhistorie.
+3. PNG-/Story-Export und Teilen.
+4. Echte Teams als eigenes Liga-Modul.
 
 ## Datenquellen
 
@@ -29,9 +35,9 @@ Die Fahrerkarte ist die sportliche Identität eines Fahrers innerhalb einer Liga
 | Name / Avatar / Team | `profiles` |
 | Liga / Startnummer | `groups`, `group_members` |
 | Punkte / Kilometer / Höhenmeter | `rides`, `season_point_adjustments` |
-| Aktuelles Trikot | bestehende `seasonRules` |
-| spätere Karrierekarte | `season_card_snapshots` |
+| Aktuelles Trikot | `seasonRules` |
+| Karrierearchiv | `season_card_snapshots` |
 
-## Migration
+## Voraussetzung
 
-Vor dem Live-Test von Phase 1 muss `supabase/rider_card_phase_1.sql` einmal im Supabase SQL Editor ausgeführt werden. Sie ist so geschrieben, dass bestehende Testdaten erhalten bleiben.
+Die Migration `supabase/rider_card_phase_1.sql` muss einmal im Supabase SQL Editor ausgeführt sein. Bestehende Testdaten bleiben dabei erhalten.

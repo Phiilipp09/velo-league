@@ -10,6 +10,7 @@ export type LiveEvent = { id: string; group_id: string; creator_id: string; titl
 export type EventRsvp = { event_id: string; user_id: string; status: 'accepted' | 'declined' | 'pending' }
 export type LiveNotification = { id: string; user_id: string; group_id?: string | null; type: string; title: string; body?: string | null; read_at?: string | null; created_at: string }
 export type JerseyHistory = { id: string; group_id: string; jersey_key: string; user_id: string; started_at: string; ended_at?: string | null; reason?: string | null; profiles?: { display_name?: string } | null }
+export type SeasonCardSnapshot = { id: string; group_id: string; user_id: string; season_year: number; rarity: 'bronze' | 'silver' | 'gold' | 'legend'; total_points: number; wins: number; kilometers: number; elevation_m: number; titles: string[]; created_at: string }
 
 async function db<T>(path: string, options: RequestInit = {}, prefer?: string): Promise<T> {
   const { url, key } = getSupabaseConfig()
@@ -99,3 +100,4 @@ export async function getJerseyHistory(groupId: string) {
   return rows.map(row => ({ ...row, started_at: row.earned_at, ended_at: row.lost_at }))
 }
 export const syncJerseyHistory = (groupId: string) => db('rpc/sync_jersey_history', { method: 'POST', body: JSON.stringify({ target_group_id: groupId }) }, 'return=minimal')
+export const getSeasonCardSnapshots = (groupId: string, userId: string) => db<SeasonCardSnapshot[]>(`season_card_snapshots?group_id=eq.${encodeURIComponent(groupId)}&user_id=eq.${encodeURIComponent(userId)}&select=*&order=season_year.desc`)
