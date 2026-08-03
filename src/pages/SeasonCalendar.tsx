@@ -3,9 +3,105 @@ import { CalendarCheck2, Check, ChevronLeft, ChevronRight, Mountain, Plus, Users
 import { Card, SectionHeading } from '../components/Ui'
 import { createEvent, getEventRsvps, getEvents, getGroups, notifyGroupEvent, setEventRsvp, type EventRsvp, type LiveEvent, type LiveGroup } from '../lib/supabaseData'
 import { restoreSupabaseUser } from '../lib/supabaseAuth'
+
 type Day = { date: Date; key: string; day: string; week: string; month: string }
-const start = new Date('2026-07-29T12:00:00'), daysFor = (offset: number): Day[] => Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(date.getDate() + offset * 7 + index); return { date, key: date.toISOString().slice(0, 10), day: String(date.getDate()).padStart(2, '0'), week: date.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', ''), month: date.toLocaleDateString('de-DE', { month: 'short' }).toUpperCase() } })
-export function SeasonCalendar({ notify }: { notify: (message: string) => void; onNavigate?: unknown }) { const [events, setEvents] = useState<LiveEvent[]>([]), [groups, setGroups] = useState<LiveGroup[]>([]), [userId, setUserId] = useState<string>(), [offset, setOffset] = useState(0), [selected, setSelected] = useState<LiveEvent | null>(null), [creating, setCreating] = useState(false), [day, setDay] = useState<Day | null>(null); const days = useMemo(() => daysFor(offset), [offset]); const active = groups.find(group => group.id === (userId ? localStorage.getItem(`velo-active-group:${userId}`) : '')) || groups[0]; const load = async () => { const user = await restoreSupabaseUser(); if (!user) return; setUserId(user.id); const next = await getGroups(); setGroups(next); const group = next.find(item => item.id === localStorage.getItem(`velo-active-group:${user.id}`)) || next[0]; setEvents(group ? await getEvents(group.id) : []) }; useEffect(() => { void load() }, []); const add = async (title: string, startsAt: string, details: string) => { if (!active || !userId) return notify('Erstelle zuerst eine Gruppe.'); try { const event = await createEvent({ group_id: active.id, creator_id: userId, title, starts_at: new Date(startsAt).toISOString(), details }); await notifyGroupEvent(event.id); setEvents(current => [...current, event].sort((a, b) => a.starts_at.localeCompare(b.starts_at))); setCreating(false); notify('Termin geplant · Mitglieder wurden benachrichtigt.') } catch (error) { notify(error instanceof Error ? error.message : 'Termin konnte nicht erstellt werden.') } }; const label = `${days[0].date.toLocaleDateString('de-DE', { month: 'long' })} — ${days[6].date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`; return <div className="page"><div className="calendar-head"><button className="icon-button" onClick={() => setOffset(value => value - 1)}><ChevronLeft size={18}/></button><div><p className="eyebrow">SAISON 2026</p><h2>{label}</h2></div><button className="icon-button" onClick={() => setOffset(value => value + 1)}><ChevronRight size={18}/></button></div><Card className="calendar-strip">{days.map((item, index) => { const has = events.some(event => event.starts_at.slice(0, 10) === item.key); return <button key={item.key} onClick={() => setDay(item)} className={`${offset === 0 && index === 0 ? 'today-card' : 'calendar-day'} ${has ? 'planned-day' : ''}`}><span>{offset === 0 && index === 0 ? 'HEUTE' : item.week}</span><b>{item.day}</b><small>{item.month}</small>{has && <i/>}</button> })}</Card><SectionHeading eyebrow="GEMEINSAM UNTERWEGS" title="Rennkalender" action={<button className="text-button" onClick={() => setCreating(true)}><Plus size={15}/> Termin hinzufügen</button>}/>{!active ? <Card className="empty-inline"><Users size={20}/><div><strong>Du bist noch in keiner Gruppe.</strong><p>Erstelle zuerst eine Gruppe, um Termine zu planen.</p></div></Card> : events.length ? <div className="event-list">{events.map(event => <button onClick={() => setSelected(event)} className="event-button" key={event.id}><Card className="event-card"><div className="event-date"><b>{new Date(event.starts_at).toLocaleDateString('de-DE', { day: '2-digit' })}</b><span>{new Date(event.starts_at).toLocaleDateString('de-DE', { month: 'short' }).toUpperCase()}</span></div><span className="event-icon yellow"><Mountain size={19}/></span><div><h3>{event.title}</h3><p>{new Date(event.starts_at).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}</p></div><ChevronRight size={18}/></Card></button>)}</div> : <Card className="empty-inline"><CalendarCheck2 size={20}/><div><strong>Dein Kalender ist noch frei.</strong><p>Plane eine gemeinsame Ausfahrt oder ein Gruppen-Event.</p></div></Card>}{creating && <EventForm onClose={() => setCreating(false)} onCreate={add}/>} {selected && userId && <EventDetail event={selected} userId={userId} onClose={() => setSelected(null)} notify={notify}/>} {day && <DayDetail day={day} events={events.filter(event => event.starts_at.slice(0, 10) === day.key)} onClose={() => setDay(null)} onSelect={setSelected}/>}</div> }
-function EventForm({ onClose, onCreate }: { onClose: () => void; onCreate: (title: string, startsAt: string, details: string) => void }) { const [title, setTitle] = useState('Gemeinsame Ausfahrt'), [startsAt, setStartsAt] = useState('2026-08-08T09:00'), [details, setDetails] = useState('Treffpunkt wird in der Gruppe abgestimmt.'); return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">GRUPPENTERMIN</p><h2>Termin hinzufügen</h2><label>Titel<input value={title} onChange={event => setTitle(event.target.value)}/></label><label>Datum & Uhrzeit<input type="datetime-local" value={startsAt} onChange={event => setStartsAt(event.target.value)}/></label><label>Details<input value={details} onChange={event => setDetails(event.target.value)}/></label><button className="primary-button wide" onClick={() => onCreate(title, startsAt, details)}><CalendarCheck2 size={16}/> Termin planen</button></section></div> }
-function EventDetail({ event, userId, onClose, notify }: { event: LiveEvent; userId: string; onClose: () => void; notify: (message: string) => void }) { const [rsvps, setRsvps] = useState<EventRsvp[]>([]); const load = () => void getEventRsvps(event.id).then(setRsvps).catch(() => undefined); useEffect(load, [event.id]); const mine = rsvps.find(item => item.user_id === userId)?.status || 'pending'; const answer = async (status: EventRsvp['status']) => { try { await setEventRsvp(event.id, userId, status); load(); notify(status === 'accepted' ? 'Du hast zugesagt.' : 'Du hast abgesagt.') } catch (error) { notify(error instanceof Error ? error.message : 'Antwort konnte nicht gespeichert werden.') } }; const yes = rsvps.filter(item => item.status === 'accepted').length, no = rsvps.filter(item => item.status === 'declined').length; return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">GRUPPENTERMIN</p><h2>{event.title}</h2><div className="challenge-insights"><div><span>Datum</span><b>{new Date(event.starts_at).toLocaleDateString('de-DE', { dateStyle: 'long' })}</b></div><div><span>Uhrzeit</span><b>{new Date(event.starts_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</b></div><div><span>Zusagen</span><b>{yes}</b></div><div><span>Absagen</span><b>{no}</b></div></div><p className="empty-copy">{event.details || 'Keine zusätzlichen Details.'}</p><div className="settings-actions"><button className={mine === 'declined' ? 'primary-button' : 'secondary-button'} onClick={() => void answer('declined')}>Absagen</button><button className={mine === 'accepted' ? 'accepted-button' : 'primary-button'} onClick={() => void answer('accepted')}><Check size={15}/> Zusagen</button></div></section></div> }
-function DayDetail({ day, events, onClose, onSelect }: { day: Day; events: LiveEvent[]; onClose: () => void; onSelect: (event: LiveEvent) => void }) { return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">{day.week.toUpperCase()} · {day.day}. {day.month}</p><h2>Tagesübersicht</h2>{events.length ? events.map(event => <button className="day-event" key={event.id} onClick={() => { onClose(); onSelect(event) }}><CalendarCheck2 size={17}/><span><b>{event.title}</b><small>{new Date(event.starts_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</small></span><ChevronRight size={16}/></button>) : <p className="empty-copy">Für diesen Tag ist noch nichts geplant.</p>}</section></div> }
+const berlin = 'Europe/Berlin'
+
+const berlinDate = (value: string, options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('de-DE', { ...options, timeZone: berlin }).format(new Date(value))
+
+const berlinDateKey = (value: string) => {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: berlin, year: 'numeric', month: '2-digit', day: '2-digit' })
+    .formatToParts(new Date(value))
+    .filter(part => part.type !== 'literal')
+  const date = Object.fromEntries(parts.map(part => [part.type, part.value])) as Record<string, string>
+  return `${date.year}-${date.month}-${date.day}`
+}
+
+// Datum & Uhrzeit werden als Berliner Ortszeit eingegeben und gespeichert.
+const berlinDateTimeToIso = (value: string) => {
+  const [date, time] = value.split('T')
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const wallClock = Date.UTC(year, month - 1, day, hour, minute)
+  const rendered = new Intl.DateTimeFormat('en-GB', { timeZone: berlin, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date(wallClock))
+    .filter(part => part.type !== 'literal')
+  const actual = Object.fromEntries(rendered.map(part => [part.type, Number(part.value)])) as Record<string, number>
+  const differenceMinutes = (wallClock - Date.UTC(actual.year, actual.month - 1, actual.day, actual.hour, actual.minute)) / 60000
+  return new Date(wallClock + differenceMinutes * 60000).toISOString()
+}
+
+const start = new Date('2026-07-29T12:00:00')
+const daysFor = (offset: number): Day[] => Array.from({ length: 7 }, (_, index) => {
+  const date = new Date(start)
+  date.setDate(date.getDate() + offset * 7 + index)
+  return { date, key: date.toISOString().slice(0, 10), day: String(date.getDate()).padStart(2, '0'), week: date.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', ''), month: date.toLocaleDateString('de-DE', { month: 'short' }).toUpperCase() }
+})
+
+export function SeasonCalendar({ notify }: { notify: (message: string) => void; onNavigate?: unknown }) {
+  const [events, setEvents] = useState<LiveEvent[]>([])
+  const [groups, setGroups] = useState<LiveGroup[]>([])
+  const [userId, setUserId] = useState<string>()
+  const [offset, setOffset] = useState(0)
+  const [selected, setSelected] = useState<LiveEvent | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [day, setDay] = useState<Day | null>(null)
+  const days = useMemo(() => daysFor(offset), [offset])
+  const active = groups.find(group => group.id === (userId ? localStorage.getItem(`velo-active-group:${userId}`) : '')) || groups[0]
+
+  const load = async () => {
+    const user = await restoreSupabaseUser()
+    if (!user) return
+    setUserId(user.id)
+    const next = await getGroups()
+    setGroups(next)
+    const group = next.find(item => item.id === localStorage.getItem(`velo-active-group:${user.id}`)) || next[0]
+    setEvents(group ? await getEvents(group.id) : [])
+  }
+
+  useEffect(() => { void load() }, [])
+
+  const add = async (title: string, startsAt: string, details: string) => {
+    if (!active || !userId) return notify('Erstelle zuerst eine Gruppe.')
+    try {
+      const event = await createEvent({ group_id: active.id, creator_id: userId, title, starts_at: berlinDateTimeToIso(startsAt), details })
+      await notifyGroupEvent(event.id)
+      setEvents(current => [...current, event].sort((a, b) => a.starts_at.localeCompare(b.starts_at)))
+      setCreating(false)
+      notify('Termin geplant · Mitglieder wurden benachrichtigt.')
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Termin konnte nicht erstellt werden.')
+    }
+  }
+
+  const label = `${days[0].date.toLocaleDateString('de-DE', { month: 'long' })} — ${days[6].date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}`
+  return <div className="page">
+    <div className="calendar-head"><button className="icon-button" onClick={() => setOffset(value => value - 1)}><ChevronLeft size={18}/></button><div><p className="eyebrow">SAISON 2026</p><h2>{label}</h2></div><button className="icon-button" onClick={() => setOffset(value => value + 1)}><ChevronRight size={18}/></button></div>
+    <Card className="calendar-strip">{days.map((item, index) => { const has = events.some(event => berlinDateKey(event.starts_at) === item.key); return <button key={item.key} onClick={() => setDay(item)} className={`${offset === 0 && index === 0 ? 'today-card' : 'calendar-day'} ${has ? 'planned-day' : ''}`}><span>{offset === 0 && index === 0 ? 'HEUTE' : item.week}</span><b>{item.day}</b><small>{item.month}</small>{has && <i/>}</button> })}</Card>
+    <SectionHeading eyebrow="GEMEINSAM UNTERWEGS" title="Rennkalender" action={<button className="text-button" onClick={() => setCreating(true)}><Plus size={15}/> Termin hinzufügen</button>}/>
+    {!active ? <Card className="empty-inline"><Users size={20}/><div><strong>Du bist noch in keiner Gruppe.</strong><p>Erstelle zuerst eine Gruppe, um Termine zu planen.</p></div></Card> : events.length ? <div className="event-list">{events.map(event => <button onClick={() => setSelected(event)} className="event-button" key={event.id}><Card className="event-card"><div className="event-date"><b>{berlinDate(event.starts_at, { day: '2-digit' })}</b><span>{berlinDate(event.starts_at, { month: 'short' }).toUpperCase()}</span></div><span className="event-icon yellow"><Mountain size={19}/></span><div><h3>{event.title}</h3><p>{berlinDate(event.starts_at, { dateStyle: 'medium', timeStyle: 'short' })}</p></div><ChevronRight size={18}/></Card></button>)}</div> : <Card className="empty-inline"><CalendarCheck2 size={20}/><div><strong>Dein Kalender ist noch frei.</strong><p>Plane eine gemeinsame Ausfahrt oder ein Gruppen-Event.</p></div></Card>}
+    {creating && <EventForm onClose={() => setCreating(false)} onCreate={add}/>} {selected && userId && <EventDetail event={selected} userId={userId} onClose={() => setSelected(null)} notify={notify}/>} {day && <DayDetail day={day} events={events.filter(event => berlinDateKey(event.starts_at) === day.key)} onClose={() => setDay(null)} onSelect={setSelected}/>}</div>
+}
+
+function EventForm({ onClose, onCreate }: { onClose: () => void; onCreate: (title: string, startsAt: string, details: string) => void }) {
+  const [title, setTitle] = useState('Gemeinsame Ausfahrt')
+  const [startsAt, setStartsAt] = useState('2026-08-08T09:00')
+  const [details, setDetails] = useState('Treffpunkt wird in der Gruppe abgestimmt.')
+  return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">GRUPPENTERMIN</p><h2>Termin hinzufügen</h2><label>Titel<input value={title} onChange={event => setTitle(event.target.value)}/></label><label>Datum & Uhrzeit<input type="datetime-local" value={startsAt} onChange={event => setStartsAt(event.target.value)}/></label><label>Details<input value={details} onChange={event => setDetails(event.target.value)}/></label><button className="primary-button wide" onClick={() => onCreate(title, startsAt, details)}><CalendarCheck2 size={16}/> Termin planen</button></section></div>
+}
+
+function EventDetail({ event, userId, onClose, notify }: { event: LiveEvent; userId: string; onClose: () => void; notify: (message: string) => void }) {
+  const [rsvps, setRsvps] = useState<EventRsvp[]>([])
+  const load = () => void getEventRsvps(event.id).then(setRsvps).catch(() => undefined)
+  useEffect(load, [event.id])
+  const mine = rsvps.find(item => item.user_id === userId)?.status || 'pending'
+  const answer = async (status: EventRsvp['status']) => { try { await setEventRsvp(event.id, userId, status); load(); notify(status === 'accepted' ? 'Du hast zugesagt.' : 'Du hast abgesagt.') } catch (error) { notify(error instanceof Error ? error.message : 'Antwort konnte nicht gespeichert werden.') } }
+  const yes = rsvps.filter(item => item.status === 'accepted').length
+  const no = rsvps.filter(item => item.status === 'declined').length
+  return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">GRUPPENTERMIN</p><h2>{event.title}</h2><div className="challenge-insights"><div><span>Datum</span><b>{berlinDate(event.starts_at, { dateStyle: 'long' })}</b></div><div><span>Uhrzeit</span><b>{berlinDate(event.starts_at, { hour: '2-digit', minute: '2-digit' })}</b></div><div><span>Zusagen</span><b>{yes}</b></div><div><span>Absagen</span><b>{no}</b></div></div><p className="empty-copy">{event.details || 'Keine zusätzlichen Details.'}</p><div className="settings-actions"><button className={mine === 'declined' ? 'primary-button' : 'secondary-button'} onClick={() => void answer('declined')}>Absagen</button><button className={mine === 'accepted' ? 'accepted-button' : 'primary-button'} onClick={() => void answer('accepted')}><Check size={15}/> Zusagen</button></div></section></div>
+}
+
+function DayDetail({ day, events, onClose, onSelect }: { day: Day; events: LiveEvent[]; onClose: () => void; onSelect: (event: LiveEvent) => void }) {
+  return <div className="modal-backdrop planner-wrap"><section className="planner-card"><button className="drawer-close" onClick={onClose}><X size={19}/></button><p className="eyebrow">{day.week.toUpperCase()} · {day.day}. {day.month}</p><h2>Tagesübersicht</h2>{events.length ? events.map(event => <button className="day-event" key={event.id} onClick={() => { onClose(); onSelect(event) }}><CalendarCheck2 size={17}/><span><b>{event.title}</b><small>{berlinDate(event.starts_at, { hour: '2-digit', minute: '2-digit' })}</small></span><ChevronRight size={16}/></button>) : <p className="empty-copy">Für diesen Tag ist noch nichts geplant.</p>}</section></div>
+}

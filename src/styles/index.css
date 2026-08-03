@@ -42,3 +42,4 @@
 .activities-page,.activities-page .ride-card,.activities-page .ride-main,.activities-page .ride-main h3,.activities-page .ride-main span,.activities-page .ride-points{color:#fff!important}.activities-page .ride-main .eyebrow{color:#d0d4cb!important}
 .planner-card input[type="datetime-local"]{color-scheme:dark}.event-card,.event-card h3,.event-card p,.event-card svg,.event-card div{color:#fff!important}.event-card .event-date span{color:#dce0d7!important}
 .challenge-progress{display:grid!important;grid-template-columns:1fr 1fr;gap:5px 8px;margin-top:13px;font-size:10px;color:#d7ddd4}.challenge-progress i{display:block;height:5px;overflow:hidden;border-radius:99px;background:#343936}.challenge-progress i b{display:block;height:100%;border-radius:99px;background:#f5d928}
+.ranking .rider-row{background:#171d25;color:#fff}.ranking .rider-row:hover{background:#222b36}.ranking .rider-row .jersey.white,.ranking .rider-row .jersey.plain{box-shadow:0 0 0 2px #596675}
