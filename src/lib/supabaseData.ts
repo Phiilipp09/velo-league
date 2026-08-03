@@ -3,7 +3,7 @@ import { getSupabaseAccessToken, getSupabaseConfig, isSupabaseConfigured } from 
 export type LiveProfile = { id: string; display_name: string; birth_date?: string | null; gender?: string | null; height_cm?: number | null; weight_kg?: number | null; rider_level?: string | null; onboarding_completed?: boolean }
 export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
 export type LiveMember = { user_id: string; role: string; profiles?: { display_name?: string } | null }
-export type LiveRide = { id: string; user_id: string; group_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
+export type LiveRide = { id: string; user_id: string; group_id?: string | null; external_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
 export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
 
