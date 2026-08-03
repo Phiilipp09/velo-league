@@ -17,7 +17,7 @@ export function Challenges({ notify, userId, groups, onNavigate }: { notify: (me
     if (!userId || !opponent) return
     setError('')
     try {
-      await createChallenge({ group_id: active.id, challenger_id: userId, creator_id: userId, opponent_id: opponent, title, goal, reward: '100 Saisonpunkte', ends_at: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10) })
+      await createChallenge({ group_id: active.id, challenger_id: userId, creator_id: userId, opponent_id: opponent, title, goal, challenge_type: 'free', reward: '100 Saisonpunkte', ends_at: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10) })
       setPlanner(false); setTab('pending'); await load(); announceLiveDataChange(); notify('Challenge an deinen Gegner gesendet.')
     } catch (reason) { const message = reason instanceof Error ? reason.message : 'Challenge konnte nicht geplant werden.'; setError(message); notify(message) }
   }

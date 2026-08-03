@@ -4,7 +4,7 @@ export type LiveProfile = { id: string; display_name: string; birth_date?: strin
 export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
 export type LiveMember = { user_id: string; role: string; profiles?: { display_name?: string } | null }
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
-export type LiveChallenge = { id: string; group_id: string; challenger_id: string; creator_id?: string; opponent_id: string; title: string; goal: string; reward?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; ends_at?: string | null; created_at: string }
+export type LiveChallenge = { id: string; group_id: string; challenger_id: string; creator_id?: string; opponent_id: string; title: string; goal: string; challenge_type?: string; reward?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; ends_at?: string | null; created_at: string }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
 
 async function db<T>(path: string, options: RequestInit = {}, prefer?: string): Promise<T> {
@@ -40,7 +40,7 @@ export async function deleteRide(id: string) { await db(`rides?id=eq.${encodeURI
 export const getOwnRides = (userId: string) => db<LiveRide[]>(`rides?user_id=eq.${encodeURIComponent(userId)}&select=*&order=started_at.desc`)
 export const getChallenges = (groupId: string) => db<LiveChallenge[]>(`challenges?group_id=eq.${encodeURIComponent(groupId)}&select=*&order=created_at.desc`)
 export async function createChallenge(input: Omit<LiveChallenge, 'id' | 'created_at' | 'status'>) {
-  const rows = await db<LiveChallenge[]>('challenges', { method: 'POST', body: JSON.stringify({ ...input, creator_id: input.creator_id || input.challenger_id, status: 'pending' }) }, 'return=representation')
+  const rows = await db<LiveChallenge[]>('challenges', { method: 'POST', body: JSON.stringify({ ...input, creator_id: input.creator_id || input.challenger_id, challenge_type: input.challenge_type || 'free', status: 'pending' }) }, 'return=representation')
   return rows[0]
 }
 export async function updateChallengeStatus(id: string, status: LiveChallenge['status']) {

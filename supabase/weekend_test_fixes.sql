@@ -2,6 +2,10 @@
 alter table public.challenges add column if not exists creator_id uuid references public.profiles(id) on delete cascade;
 update public.challenges set creator_id = challenger_id where creator_id is null;
 alter table public.challenges alter column creator_id set not null;
+alter table public.challenges add column if not exists challenge_type text;
+update public.challenges set challenge_type = 'free' where challenge_type is null;
+alter table public.challenges alter column challenge_type set default 'free';
+alter table public.challenges alter column challenge_type set not null;
 -- Alte Testdatenbank-Versionen hatten die Spalte mit einem Leerzeichen im Namen.
 -- Sie darf keine neue Challenge mehr blockieren.
 do $$
