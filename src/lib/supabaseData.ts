@@ -4,7 +4,8 @@ export type LiveProfile = { id: string; display_name: string; avatar?: string | 
 export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
 export type LiveMember = { user_id: string; role: string; profiles?: { display_name?: string; birth_date?: string | null } | null }
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; external_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
-export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
+export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; winner_id?: string | null; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
+export type PointAdjustment = { id: string; group_id: string; user_id: string; points: number; reason: string; challenge_id?: string | null }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
 export type EventRsvp = { event_id: string; user_id: string; status: 'accepted' | 'declined' | 'pending' }
 export type LiveNotification = { id: string; user_id: string; type: string; title: string; body?: string | null; read_at?: string | null; created_at: string }
@@ -59,6 +60,8 @@ export async function updateChallengeStatus(id: string, status: LiveChallenge['s
   const rows = await db<LiveChallenge[]>(`challenges?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status }) }, 'return=representation')
   return rows[0]
 }
+export const completeChallenge = (challengeId: string) => db<string | null>('rpc/complete_challenge', { method: 'POST', body: JSON.stringify({ target_challenge_id: challengeId }) }, 'return=representation')
+export const getPointAdjustments = (groupId?: string) => db<PointAdjustment[]>(`season_point_adjustments?select=*${groupId ? `&group_id=eq.${encodeURIComponent(groupId)}` : ''}`)
 export async function updateMemberRole(groupId: string, userId: string, role: 'admin' | 'member') { await db(`group_members?group_id=eq.${encodeURIComponent(groupId)}&user_id=eq.${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify({ role }) }, 'return=minimal') }
 export async function transferGroupOwnership(groupId: string, fromUserId: string, nextOwnerId: string) { await updateMemberRole(groupId, nextOwnerId, 'admin'); await updateMemberRole(groupId, fromUserId, 'member'); await db(`groups?id=eq.${encodeURIComponent(groupId)}`, { method: 'PATCH', body: JSON.stringify({ owner_id: nextOwnerId }) }, 'return=minimal') }
 export async function removeMember(groupId: string, userId: string) { await db(`group_members?group_id=eq.${encodeURIComponent(groupId)}&user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' }, 'return=minimal') }
