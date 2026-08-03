@@ -29,6 +29,9 @@ drop policy if exists "event rsvp own write" on public.event_rsvps;
 create policy "event rsvp group read" on public.event_rsvps for select using (exists(select 1 from public.group_events where id=event_id and public.is_group_member(group_id)));
 create policy "event rsvp own write" on public.event_rsvps for all using (user_id=auth.uid()) with check (user_id=auth.uid());
 
+drop policy if exists "rides own delete" on public.rides;
+create policy "rides own delete" on public.rides for delete using (user_id = auth.uid());
+
 drop policy if exists "members owner manage" on public.group_members;
 create policy "members owner manage" on public.group_members for update using (exists(select 1 from public.groups where id=group_id and owner_id=auth.uid()));
 create policy "members self leave or owner remove" on public.group_members for delete using (user_id=auth.uid() or exists(select 1 from public.groups where id=group_id and owner_id=auth.uid()));
