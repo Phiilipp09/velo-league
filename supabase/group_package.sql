@@ -10,3 +10,25 @@ begin
   from public.group_members where group_id=event_group and user_id<>event_creator;
 end;
 $$;
+
+create or replace function public.notify_challenge(target_challenge_id uuid, action text)
+returns void language plpgsql security definer set search_path = public as $$
+declare target_user uuid; challenge_title text; target_group uuid; notification_title text;
+begin
+  select group_id, title into target_group, challenge_title from public.challenges where id=target_challenge_id;
+  if target_group is null or not public.is_group_member(target_group) then raise exception 'Keine Berechtigung für diese Challenge'; end if;
+  if action='requested' then
+    select opponent_id into target_user from public.challenges where id=target_challenge_id;
+    notification_title := 'Neue Challenge-Anfrage';
+  elsif action='accepted' then
+    select challenger_id into target_user from public.challenges where id=target_challenge_id;
+    notification_title := 'Challenge angenommen';
+  else
+    select case when challenger_id=auth.uid() then opponent_id else challenger_id end into target_user from public.challenges where id=target_challenge_id;
+    notification_title := 'Challenge abgeschlossen';
+  end if;
+  if target_user is not null and target_user<>auth.uid() then
+    insert into public.notifications(user_id, type, title, body) values(target_user, 'challenge', notification_title, challenge_title);
+  end if;
+end;
+$$;
