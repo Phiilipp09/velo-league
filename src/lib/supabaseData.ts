@@ -6,6 +6,8 @@ export type LiveMember = { user_id: string; role: string; profiles?: { display_n
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; external_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
 export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
+export type EventRsvp = { event_id: string; user_id: string; status: 'accepted' | 'declined' | 'pending' }
+export type LiveNotification = { id: string; user_id: string; type: string; title: string; body?: string | null; read_at?: string | null; created_at: string }
 export type JerseyHistory = { id: string; group_id: string; jersey_key: string; user_id: string; started_at: string; ended_at?: string | null; reason?: string | null; profiles?: { display_name?: string } | null }
 
 async function db<T>(path: string, options: RequestInit = {}, prefer?: string): Promise<T> {
@@ -58,9 +60,15 @@ export async function updateChallengeStatus(id: string, status: LiveChallenge['s
   return rows[0]
 }
 export async function updateMemberRole(groupId: string, userId: string, role: 'admin' | 'member') { await db(`group_members?group_id=eq.${encodeURIComponent(groupId)}&user_id=eq.${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify({ role }) }, 'return=minimal') }
+export async function transferGroupOwnership(groupId: string, fromUserId: string, nextOwnerId: string) { await updateMemberRole(groupId, nextOwnerId, 'admin'); await updateMemberRole(groupId, fromUserId, 'member'); await db(`groups?id=eq.${encodeURIComponent(groupId)}`, { method: 'PATCH', body: JSON.stringify({ owner_id: nextOwnerId }) }, 'return=minimal') }
 export async function removeMember(groupId: string, userId: string) { await db(`group_members?group_id=eq.${encodeURIComponent(groupId)}&user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' }, 'return=minimal') }
 export const getEvents = (groupId: string) => db<LiveEvent[]>(`group_events?group_id=eq.${encodeURIComponent(groupId)}&select=*&order=starts_at.asc`)
 export async function createEvent(event: Omit<LiveEvent, 'id' | 'created_at'>) { const rows=await db<LiveEvent[]>('group_events',{method:'POST',body:JSON.stringify(event)},'return=representation'); return rows[0] }
+export const getEventRsvps = (eventId: string) => db<EventRsvp[]>(`event_rsvps?event_id=eq.${encodeURIComponent(eventId)}&select=*`)
+export async function setEventRsvp(eventId: string, userId: string, status: EventRsvp['status']) { const rows = await db<EventRsvp[]>('event_rsvps?on_conflict=event_id,user_id', { method: 'POST', body: JSON.stringify({ event_id: eventId, user_id: userId, status }) }, 'resolution=merge-duplicates,return=representation'); return rows[0] }
+export const getNotifications = (userId: string) => db<LiveNotification[]>(`notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null&select=*&order=created_at.desc`)
+export async function createNotification(note: Omit<LiveNotification, 'id' | 'created_at' | 'read_at'>) { await db('notifications', { method: 'POST', body: JSON.stringify(note) }, 'return=minimal') }
+export async function deleteNotification(id: string) { await db(`notifications?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, 'return=minimal') }
 export async function getJerseyHistory(groupId: string) {
   const rows = await db<(Omit<JerseyHistory, 'started_at' | 'ended_at'> & { earned_at: string; lost_at?: string | null })[]>(`jersey_history?group_id=eq.${encodeURIComponent(groupId)}&select=*,profiles(display_name)&order=earned_at.desc`)
   return rows.map(row => ({ ...row, started_at: row.earned_at, ended_at: row.lost_at }))
