@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bike, Crown, Flame, LogOut, Medal, Mountain, Settings, Trophy, X, Zap } from 'lucide-react'
+import { Bike, Check, Crown, Flame, LogOut, Medal, Mountain, Settings, Share2, Trophy, X, Zap } from 'lucide-react'
 import { Card, Jersey, SectionHeading } from '../components/Ui'
 import { getChallenges, getGroupMembers, getJerseyHistory, getPointAdjustments, getProfile, getRides, getSeasonCardSnapshots, saveProfile, syncJerseyHistory, type JerseyHistory, type LiveGroup, type SeasonCardSnapshot } from '../lib/supabaseData'
 import { jerseyLeaders, seasonStandings, type JerseyKey } from '../lib/seasonRules'
@@ -98,9 +98,27 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
 }
 
 function RiderCard({ name, group, team, level, number, jersey, points, wins, kilometers, elevation }: { name: string; group?: LiveGroup; team?: string; level?: string; number: number | null; jersey?: JerseyKey; points: number; wins: number; kilometers: number; elevation: number }) {
+  const [shareNotice, setShareNotice] = useState<string | null>(null)
   const cardJersey = jersey || 'plain'
   const rarity = points >= 2500 ? 'LEGEND' : points >= 1200 ? 'GOLD' : points >= 500 ? 'SILBER' : 'BRONZE'
-  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON 2026</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small></div><div className="rider-card-avatar"><div>{name.slice(0, 1).toUpperCase()}</div><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
+  const share = async () => {
+    const title = `${name} · VELO LEAGUE Fahrerkarte`
+    const text = `Meine VELO LEAGUE Fahrerkarte: ${format(points)} Punkte · ${wins} Siege · ${format(kilometers)} km${jersey ? ` · ${jerseyTitle[jersey]}` : ''}. Every ride is a race.`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url: window.location.href })
+        setShareNotice('Teilen geöffnet')
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`${title}\n${text}\n${window.location.href}`)
+        setShareNotice('Kartentext kopiert')
+      } else setShareNotice('Teilen wird von diesem Browser nicht unterstützt')
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      setShareNotice('Teilen konnte nicht geöffnet werden')
+    }
+    window.setTimeout(() => setShareNotice(null), 2800)
+  }
+  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON 2026</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small></div><div className="rider-card-avatar"><div>{name.slice(0, 1).toUpperCase()}</div><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><span>WhatsApp · Instagram · Discord</span></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
 }
 
 function JerseySpecialCards({ jerseys, onSelect }: { jerseys: JerseyKey[]; onSelect: (type: JerseyKey) => void }) {
