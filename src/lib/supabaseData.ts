@@ -4,7 +4,7 @@ export type LiveProfile = { id: string; display_name: string; birth_date?: strin
 export type LiveGroup = { id: string; name: string; invite_code: string; owner_id: string; created_at: string }
 export type LiveMember = { user_id: string; role: string; profiles?: { display_name?: string } | null }
 export type LiveRide = { id: string; user_id: string; group_id?: string | null; title: string; source: 'manual' | 'strava'; distance_m: number; elevation_m: number; moving_time_s?: number | null; points: number; started_at: string }
-export type LiveChallenge = { id: string; group_id: string; challenger_id: string; creator_id?: string; opponent_id: string; title: string; goal: string; challenge_type?: string; reward?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; ends_at?: string | null; created_at: string }
+export type LiveChallenge = { id: string; group_id: string; challenger_id?: string | null; creator_id: string; opponent_id: string; title: string; goal: string; goal_text: string; challenge_type?: string; target_value?: number | null; target_unit?: string | null; jersey_key?: string | null; reward?: string | null; reward_text?: string | null; status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed'; starts_at?: string; ends_at: string; created_at: string }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
 
 async function db<T>(path: string, options: RequestInit = {}, prefer?: string): Promise<T> {
@@ -39,8 +39,17 @@ export async function saveRide(input: Omit<LiveRide, 'id'> & { user_id: string; 
 export async function deleteRide(id: string) { await db(`rides?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, 'return=minimal') }
 export const getOwnRides = (userId: string) => db<LiveRide[]>(`rides?user_id=eq.${encodeURIComponent(userId)}&select=*&order=started_at.desc`)
 export const getChallenges = (groupId: string) => db<LiveChallenge[]>(`challenges?group_id=eq.${encodeURIComponent(groupId)}&select=*&order=created_at.desc`)
-export async function createChallenge(input: Omit<LiveChallenge, 'id' | 'created_at' | 'status'>) {
-  const rows = await db<LiveChallenge[]>('challenges', { method: 'POST', body: JSON.stringify({ ...input, creator_id: input.creator_id || input.challenger_id, challenge_type: input.challenge_type || 'free', status: 'pending' }) }, 'return=representation')
+export async function createChallenge(input: Omit<LiveChallenge, 'id' | 'created_at' | 'status' | 'goal_text' | 'reward_text' | 'starts_at'>) {
+  const creatorId = input.creator_id || input.challenger_id
+  const rows = await db<LiveChallenge[]>('challenges', { method: 'POST', body: JSON.stringify({
+    ...input,
+    creator_id: creatorId,
+    challenge_type: input.challenge_type || 'free',
+    goal_text: input.goal,
+    reward_text: input.reward || '100 Saisonpunkte',
+    starts_at: new Date().toISOString(),
+    status: 'pending'
+  }) }, 'return=representation')
   return rows[0]
 }
 export async function updateChallengeStatus(id: string, status: LiveChallenge['status']) {
