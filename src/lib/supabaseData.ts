@@ -8,7 +8,7 @@ export type LiveChallenge = { id: string; group_id: string; challenger_id?: stri
 export type PointAdjustment = { id: string; group_id: string; user_id: string; points: number; reason: string; challenge_id?: string | null }
 export type LiveEvent = { id: string; group_id: string; creator_id: string; title: string; starts_at: string; details?: string | null; created_at: string }
 export type EventRsvp = { event_id: string; user_id: string; status: 'accepted' | 'declined' | 'pending' }
-export type LiveNotification = { id: string; user_id: string; type: string; title: string; body?: string | null; read_at?: string | null; created_at: string }
+export type LiveNotification = { id: string; user_id: string; group_id?: string | null; type: string; title: string; body?: string | null; read_at?: string | null; created_at: string }
 export type JerseyHistory = { id: string; group_id: string; jersey_key: string; user_id: string; started_at: string; ended_at?: string | null; reason?: string | null; profiles?: { display_name?: string } | null }
 
 async function db<T>(path: string, options: RequestInit = {}, prefer?: string): Promise<T> {
@@ -81,7 +81,11 @@ export const getEvents = (groupId: string) => db<LiveEvent[]>(`group_events?grou
 export async function createEvent(event: Omit<LiveEvent, 'id' | 'created_at'>) { const rows=await db<LiveEvent[]>('group_events',{method:'POST',body:JSON.stringify(event)},'return=representation'); return rows[0] }
 export const getEventRsvps = (eventId: string) => db<EventRsvp[]>(`event_rsvps?event_id=eq.${encodeURIComponent(eventId)}&select=*`)
 export async function setEventRsvp(eventId: string, userId: string, status: EventRsvp['status']) { const rows = await db<EventRsvp[]>('event_rsvps?on_conflict=event_id,user_id', { method: 'POST', body: JSON.stringify({ event_id: eventId, user_id: userId, status }) }, 'resolution=merge-duplicates,return=representation'); return rows[0] }
-export const getNotifications = (userId: string) => db<LiveNotification[]>(`notifications?user_id=eq.${encodeURIComponent(userId)}&read_at=is.null&select=*&order=created_at.desc`)
+export const getNotifications = (userId: string, groupIds: string[]) => {
+  if (!groupIds.length) return Promise.resolve([] as LiveNotification[])
+  const ids = groupIds.map(id => `"${id}"`).join(',')
+  return db<LiveNotification[]>(`notifications?user_id=eq.${encodeURIComponent(userId)}&group_id=in.(${encodeURIComponent(`(${ids})`)})&read_at=is.null&select=*&order=created_at.desc`)
+}
 export async function createNotification(note: Omit<LiveNotification, 'id' | 'created_at' | 'read_at'>) { await db('notifications', { method: 'POST', body: JSON.stringify(note) }, 'return=minimal') }
 export async function deleteNotification(id: string) { await db(`notifications?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }, 'return=minimal') }
 export const notifyGroupEvent = (eventId: string) => db('rpc/notify_group_event', { method: 'POST', body: JSON.stringify({ target_event_id: eventId }) }, 'return=minimal')
