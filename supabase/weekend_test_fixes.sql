@@ -2,6 +2,14 @@
 alter table public.challenges add column if not exists creator_id uuid references public.profiles(id) on delete cascade;
 update public.challenges set creator_id = challenger_id where creator_id is null;
 alter table public.challenges alter column creator_id set not null;
+-- Alte Testdatenbank-Versionen hatten die Spalte mit einem Leerzeichen im Namen.
+-- Sie darf keine neue Challenge mehr blockieren.
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema='public' and table_name='challenges' and column_name='creator id') then
+    execute 'alter table public.challenges alter column "creator id" drop not null';
+  end if;
+end $$;
 
 create table if not exists public.group_events (
   id uuid primary key default gen_random_uuid(),
@@ -34,4 +42,5 @@ create policy "rides own delete" on public.rides for delete using (user_id = aut
 
 drop policy if exists "members owner manage" on public.group_members;
 create policy "members owner manage" on public.group_members for update using (exists(select 1 from public.groups where id=group_id and owner_id=auth.uid()));
+drop policy if exists "members self leave or owner remove" on public.group_members;
 create policy "members self leave or owner remove" on public.group_members for delete using (user_id=auth.uid() or exists(select 1 from public.groups where id=group_id and owner_id=auth.uid()));

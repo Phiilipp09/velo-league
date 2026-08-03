@@ -5,7 +5,11 @@ const tokenKey = 'velo-supabase-access-token'
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey)
 export const getSupabaseAccessToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey)
 export const getSupabaseConfig = () => ({ url: supabaseUrl, key: supabaseKey })
-export const storeSupabaseAccessToken = (token: string, persistent = true) => (persistent ? localStorage : sessionStorage).setItem(tokenKey, token)
+export const storeSupabaseAccessToken = (token: string, persistent = true) => {
+  sessionStorage.removeItem(tokenKey)
+  localStorage.removeItem(tokenKey)
+  ;(persistent ? localStorage : sessionStorage).setItem(tokenKey, token)
+}
 
 type AuthResponse = { access_token?: string; user?: { id: string; email?: string; user_metadata?: { display_name?: string } }; error?: { message?: string } }
 async function request(path: string, body?: Record<string, unknown>, token?: string) {
@@ -14,14 +18,14 @@ async function request(path: string, body?: Record<string, unknown>, token?: str
   if (!response.ok && !result.error) result.error = { message: result.msg || result.message || 'Anmeldung nicht möglich.' }
   return result
 }
-export async function signUpWithSupabase(email: string, password: string, name: string, birthDate: string) {
+export async function signUpWithSupabase(email: string, password: string, name: string, birthDate: string, persistent = true) {
   const result = await request('/auth/v1/signup', { email, password, data: { display_name: name, birth_date: birthDate } })
-  if (result.access_token) storeSupabaseAccessToken(result.access_token)
+  if (result.access_token) storeSupabaseAccessToken(result.access_token, persistent)
   return result
 }
-export async function signInWithSupabase(email: string, password: string) {
+export async function signInWithSupabase(email: string, password: string, persistent = true) {
   const result = await request('/auth/v1/token?grant_type=password', { email, password })
-  if (result.access_token) storeSupabaseAccessToken(result.access_token)
+  if (result.access_token) storeSupabaseAccessToken(result.access_token, persistent)
   return result
 }
 export async function restoreSupabaseUser() {
@@ -29,7 +33,7 @@ export async function restoreSupabaseUser() {
   const hash = new URLSearchParams(window.location.hash.slice(1))
   const fromLink = hash.get('access_token')
   if (fromLink) { localStorage.setItem(tokenKey, fromLink); history.replaceState(null, '', window.location.pathname) }
-  const token = fromLink || localStorage.getItem(tokenKey)
+  const token = fromLink || getSupabaseAccessToken()
   if (!token) return null
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey!, Authorization: `Bearer ${token}` } })
   if (!response.ok) return null
