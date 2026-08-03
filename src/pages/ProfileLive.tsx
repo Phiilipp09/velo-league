@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bike, Check, Crown, Flame, LogOut, Medal, Mountain, Settings, Share2, Trophy, X, Zap } from 'lucide-react'
+import { Bike, Check, Crown, Download, Flame, LogOut, Medal, Mountain, Settings, Share2, Trophy, X, Zap } from 'lucide-react'
 import { Card, Jersey, SectionHeading } from '../components/Ui'
 import { getChallenges, getGroupMembers, getJerseyHistory, getPointAdjustments, getProfile, getRides, getSeasonCardSnapshots, saveProfile, syncJerseyHistory, type JerseyHistory, type LiveGroup, type SeasonCardSnapshot } from '../lib/supabaseData'
 import { jerseyLeaders, seasonStandings, type JerseyKey } from '../lib/seasonRules'
@@ -99,6 +99,7 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
 
 function RiderCard({ name, group, team, level, number, jersey, points, wins, kilometers, elevation }: { name: string; group?: LiveGroup; team?: string; level?: string; number: number | null; jersey?: JerseyKey; points: number; wins: number; kilometers: number; elevation: number }) {
   const [shareNotice, setShareNotice] = useState<string | null>(null)
+  const [exportNotice, setExportNotice] = useState<string | null>(null)
   const cardJersey = jersey || 'plain'
   const rarity = points >= 2500 ? 'LEGEND' : points >= 1200 ? 'GOLD' : points >= 500 ? 'SILBER' : 'BRONZE'
   const share = async () => {
@@ -118,7 +119,49 @@ function RiderCard({ name, group, team, level, number, jersey, points, wins, kil
     }
     window.setTimeout(() => setShareNotice(null), 2800)
   }
-  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON 2026</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small></div><div className="rider-card-avatar"><div>{name.slice(0, 1).toUpperCase()}</div><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><span>WhatsApp · Instagram · Discord</span></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
+  const exportPng = async () => {
+    setExportNotice('Karte wird erstellt …')
+    const canvas = document.createElement('canvas')
+    canvas.width = 1080
+    canvas.height = 1350
+    const context = canvas.getContext('2d')
+    if (!context) { setExportNotice('Export wird von diesem Browser nicht unterstützt'); return }
+    const accent = cardJersey === 'polka' ? '#ed5a56' : cardJersey === 'red' ? '#ff706b' : cardJersey === 'violet' ? '#be91ff' : cardJersey === 'white' ? '#f5f5ef' : '#f5d928'
+    const background = context.createLinearGradient(0, 0, 1080, 1350)
+    background.addColorStop(0, '#070909'); background.addColorStop(.55, '#151916'); background.addColorStop(1, '#050606')
+    context.fillStyle = background; context.fillRect(0, 0, 1080, 1350)
+    context.strokeStyle = accent; context.lineWidth = 6; context.strokeRect(34, 34, 1012, 1282)
+    context.strokeStyle = 'rgba(255,255,255,.16)'; context.lineWidth = 2; context.strokeRect(54, 54, 972, 1242)
+    context.fillStyle = accent; context.font = 'italic 800 48px Arial'; context.fillText('VELO', 88, 124)
+    context.fillStyle = '#ffffff'; context.font = '800 22px Arial'; context.fillText('LEAGUE', 254, 124)
+    context.fillStyle = accent; context.font = '800 22px Arial'; context.fillText(`SEASON ${new Date().getFullYear()}`, 760, 120)
+    context.fillStyle = '#b9beb5'; context.font = '800 18px Arial'; context.fillText('FAHRERKARTE', 88, 208)
+    context.fillStyle = accent; context.fillRect(88, 236, 254, 94)
+    context.fillStyle = '#121411'; context.font = '800 62px Arial'; context.fillText(`#${String(number || 0).padStart(2, '0')}`, 108, 304)
+    context.fillStyle = '#fff'; context.font = '800 78px Arial'; context.fillText(name.toUpperCase().slice(0, 19), 88, 416)
+    context.fillStyle = accent; context.font = '700 28px Arial'; context.fillText((team || 'INDEPENDENT RIDERS').toUpperCase().slice(0, 31), 90, 470)
+    context.fillStyle = '#bbc1b8'; context.font = '600 23px Arial'; context.fillText((group?.name || 'VELO LEAGUE').toUpperCase().slice(0, 37), 90, 510)
+    context.beginPath(); context.arc(805, 386, 158, 0, Math.PI * 2); context.fillStyle = '#202620'; context.fill(); context.lineWidth = 4; context.strokeStyle = accent; context.stroke()
+    context.fillStyle = accent; context.font = '800 178px Arial'; context.textAlign = 'center'; context.fillText(name.slice(0, 1).toUpperCase(), 805, 448); context.textAlign = 'left'
+    context.fillStyle = '#0c0f0d'; context.fillRect(88, 620, 904, 292); context.strokeStyle = '#41463f'; context.lineWidth = 2; context.strokeRect(88, 620, 904, 292)
+    const statRows = [[format(points), 'GESAMTPUNKTE'], [String(wins), 'ETAPPENSIEGE'], [`${format(kilometers)} km`, 'DISTANZ'], [`${format(elevation)} hm`, 'HÖHENMETER']]
+    statRows.forEach(([value, label], index) => { const column = index % 2; const row = Math.floor(index / 2); const x = 126 + column * 446; const y = 694 + row * 136; context.fillStyle = '#fff'; context.font = '800 46px Arial'; context.fillText(value, x, y); context.fillStyle = '#afb6ad'; context.font = '800 16px Arial'; context.fillText(label, x, y + 31) })
+    context.fillStyle = accent; context.font = '800 20px Arial'; context.fillText('RIDER RATING', 88, 1002)
+    context.fillStyle = '#fff'; context.font = '800 56px Arial'; context.fillText(rarity, 88, 1070)
+    context.fillStyle = '#c7ccc4'; context.font = '600 23px Arial'; context.fillText(jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT', 88, 1120)
+    context.fillStyle = accent; context.font = 'italic 700 30px Arial'; context.fillText('EVERY RIDE IS A RACE.', 88, 1230)
+    context.fillStyle = '#bbc1b8'; context.font = '600 17px Arial'; context.fillText('VELO LEAGUE · DEINE DIGITALE FAHRERKARTE', 88, 1265)
+    canvas.toBlob(async blob => {
+      if (!blob) { setExportNotice('PNG konnte nicht erstellt werden'); return }
+      const file = new File([blob], `velo-league-${name.toLowerCase().replace(/[^a-z0-9]+/gi, '-')}-fahrerkarte.png`, { type: 'image/png' })
+      try {
+        if (navigator.share && navigator.canShare?.({ files: [file] })) { await navigator.share({ title: `${name} · VELO LEAGUE`, files: [file] }); setExportNotice('PNG zum Teilen bereit') }
+        else { const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = file.name; link.click(); URL.revokeObjectURL(url); setExportNotice('PNG gespeichert') }
+      } catch (error) { if (!(error instanceof DOMException && error.name === 'AbortError')) setExportNotice('PNG konnte nicht geteilt werden') }
+      window.setTimeout(() => setExportNotice(null), 2800)
+    }, 'image/png')
+  }
+  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON 2026</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small></div><div className="rider-card-avatar"><div>{name.slice(0, 1).toUpperCase()}</div><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><button type="button" className="rider-card-export" onClick={() => void exportPng()}>{exportNotice ? <Check size={15}/> : <Download size={15}/>} {exportNotice || 'Als PNG speichern'}</button></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
 }
 
 function JerseySpecialCards({ jerseys, onSelect }: { jerseys: JerseyKey[]; onSelect: (type: JerseyKey) => void }) {
