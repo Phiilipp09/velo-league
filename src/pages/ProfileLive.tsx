@@ -26,6 +26,7 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
   const [adjustmentPoints, setAdjustmentPoints] = useState(0)
   const [seasonCards, setSeasonCards] = useState<SeasonCardSnapshot[]>([])
   const [selectedJersey, setSelectedJersey] = useState<JerseyKey | null>(null)
+  const [selectedJerseyArchive, setSelectedJerseyArchive] = useState<JerseyHistory | null>(null)
   const displayName = profile.name || user
   const active = groups.find(group => group.id === (userId ? localStorage.getItem(`velo-active-group:${userId}`) : '')) || groups[0]
 
@@ -77,6 +78,8 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
     <RiderCard name={displayName} group={active} team={profile.team} level={profile.level} number={riderNumber} jersey={jerseys[0]} points={totalPoints} wins={wins} kilometers={stats.kilometers} elevation={stats.elevation}/>
     <SectionHeading eyebrow="DEINE AKTUELLEN TITEL" title="Trikot-Spezialkarten"/>
     <JerseySpecialCards jerseys={jerseys} onSelect={setSelectedJersey}/>
+    <SectionHeading eyebrow="DEINE SAMMLUNG" title="Gewonnene Trikotkarten"/>
+    <JerseyArchiveCards history={history.filter(entry => entry.user_id === userId && Boolean(entry.ended_at))} onSelect={setSelectedJerseyArchive}/>
     <SectionHeading eyebrow="DEINE REISE" title="Saison- & Karriereentwicklung"/>
     <CareerCards snapshots={seasonCards} seasonYear={new Date().getFullYear()} points={totalPoints} wins={wins} kilometers={stats.kilometers} elevation={stats.elevation} jerseys={jerseys} seasonClosed={Boolean(active?.season_closed_at)}/>
     <Card className="profile-hero"><button aria-label="Profileinstellungen öffnen" onClick={() => setSettings(true)} className="profile-settings"><Settings size={18}/></button><div className="profile-avatar">{displayName.slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">DEIN FAHRERPROFIL</p><h2>{displayName}</h2><p>{profile.level || 'Rider'} · {stats.rides.length ? `${stats.rides.length} Fahrt${stats.rides.length === 1 ? '' : 'en'} in dieser Saison` : 'Saisonstart'}</p></div></Card>
@@ -90,6 +93,7 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
     <button className="profile-logout" onClick={logout}><LogOut size={17}/> Abmelden</button>
     {settings && <ProfileSettings initial={{ ...profile, name: displayName }} onClose={() => setSettings(false)} onSave={save}/>} 
     {selectedJersey && <JerseyCardModal type={selectedJersey} groupName={active?.name} onClose={() => setSelectedJersey(null)}/>} 
+    {selectedJerseyArchive && <JerseyCardModal type={selectedJerseyArchive.jersey_key as JerseyKey} groupName={active?.name} history={selectedJerseyArchive} onClose={() => setSelectedJerseyArchive(null)}/>} 
   </div>
 }
 
@@ -104,6 +108,17 @@ function JerseySpecialCards({ jerseys, onSelect }: { jerseys: JerseyKey[]; onSel
   return <div className="special-card-grid">{jerseys.map(type => {
     const copy = jerseyCardCopy[type]
     return <button className={`jersey-special-card jersey-special-${type}`} key={type} onClick={() => onSelect(type)}><div className="special-card-top"><Jersey type={type} small/><span>AKTUELL</span></div><div><p>{copy.title}</p><h3>{copy.label}</h3><small>{copy.description}</small></div><b>Öffnen</b></button>
+  })}</div>
+}
+
+function JerseyArchiveCards({ history, onSelect }: { history: JerseyHistory[]; onSelect: (entry: JerseyHistory) => void }) {
+  if (!history.length) return <Card className="special-card-empty"><Medal size={22}/><div><strong>Deine Sammlung beginnt mit dem ersten Trikot.</strong><p>Gewonnene und später abgegebene Trikots bleiben hier dauerhaft als Karten erhalten.</p></div></Card>
+  return <div className="jersey-archive-grid">{history.map(entry => {
+    const type = entry.jersey_key as JerseyKey
+    const started = new Date(entry.started_at)
+    const ended = entry.ended_at ? new Date(entry.ended_at) : new Date()
+    const days = Math.max(1, Math.ceil((ended.getTime() - started.getTime()) / 86_400_000))
+    return <button type="button" className={`jersey-archive-card jersey-special-${type}`} key={entry.id} onClick={() => onSelect(entry)}><div><Jersey type={type} small/><span>ARCHIVIERT</span></div><p>{jerseyCardCopy[type]?.title || 'TRIKOT-TITEL'}</p><h3>{jerseyTitle[type] || entry.jersey_key}</h3><small>Getragen für {days} Tag{days === 1 ? '' : 'e'}</small><b>{started.toLocaleDateString('de-DE')}</b></button>
   })}</div>
 }
 
@@ -123,7 +138,7 @@ function SeasonCardModal({ card, onClose }: { card: SeasonCardSnapshot; onClose:
   return <div className="modal-backdrop" onClick={onClose}><section className={`season-card-modal season-mini-${card.rarity}`} onClick={event => event.stopPropagation()}><button className="modal-close" aria-label="Saisonkarte schließen" onClick={onClose}><X size={18}/></button><p className="eyebrow">{card.id === 'live' ? 'AKTUELLE FAHRERKARTE' : 'ARCHIVIERTE SAISONKARTE'}</p><h2>Saison {card.season_year}</h2><b className="season-card-rarity">{card.rarity.toUpperCase()}</b><div className="season-detail-points"><strong>{format(card.total_points)}</strong><span>GESAMTPUNKTE</span></div><div className="season-detail-stats"><span><b>{card.wins}</b> Siege</span><span><b>{format(card.kilometers)} km</b> Distanz</span><span><b>{format(card.elevation_m)} hm</b> Höhenmeter</span></div><div className="season-card-titles"><span>TITEL & ERFOLGE</span>{titles.map(title => <strong key={title}>{title}</strong>)}</div></section></div>
 }
 
-function JerseyCardModal({ type, groupName, onClose }: { type: JerseyKey; groupName?: string; onClose: () => void }) { const copy = jerseyCardCopy[type]; return <div className="modal-backdrop" onClick={onClose}><section className={`jersey-card-modal jersey-special-${type}`} onClick={event => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={18}/></button><Jersey type={type}/><p className="eyebrow">TRIKOT-SPEZIALKARTE</p><h2>{copy.title}</h2><p>{copy.description}</p><div><span>WERTUNG</span><strong>{copy.label}</strong><span>LIGA</span><strong>{groupName || 'VELO LEAGUE'}</strong></div></section></div> }
+function JerseyCardModal({ type, groupName, history, onClose }: { type: JerseyKey; groupName?: string; history?: JerseyHistory; onClose: () => void }) { const copy = jerseyCardCopy[type]; const started = history ? new Date(history.started_at) : null; const ended = history?.ended_at ? new Date(history.ended_at) : null; const days = started ? Math.max(1, Math.ceil(((ended || new Date()).getTime() - started.getTime()) / 86_400_000)) : null; return <div className="modal-backdrop" onClick={onClose}><section className={`jersey-card-modal jersey-special-${type}`} onClick={event => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={18}/></button><Jersey type={type}/><p className="eyebrow">{history ? 'ARCHIVIERTE TRIKOTKARTE' : 'TRIKOT-SPEZIALKARTE'}</p><h2>{copy.title}</h2><p>{copy.description}</p><div><span>WERTUNG</span><strong>{copy.label}</strong><span>LIGA</span><strong>{groupName || 'VELO LEAGUE'}</strong>{history && <><span>GEWONNEN</span><strong>{started?.toLocaleDateString('de-DE')}</strong><span>GETRAGEN</span><strong>{days} Tag{days === 1 ? '' : 'e'}</strong></>}</div></section></div> }
 
 function Badge({ icon: Icon, title, requirement, progress }: { icon: typeof Mountain; title: string; requirement: string; progress: string }) { return <Card className="achievement achievement-button"><span className="yellow"><Icon/></span><strong>{title}</strong><p>{requirement}</p><small>{progress}</small></Card> }
 function ProfileSettings({ initial, onClose, onSave }: { initial: RiderProfile; onClose: () => void; onSave: (profile: RiderProfile) => void }) { const [form, setForm] = useState(initial); const update = (key: keyof RiderProfile, value: string) => setForm(current => ({ ...current, [key]: value })); return <div className="modal-backdrop profile-settings-backdrop" onClick={onClose}><section className="profile-settings-modal" onClick={event => event.stopPropagation()}><button className="modal-close" onClick={onClose}><X size={18}/></button><p className="eyebrow">PROFIL & KÖRPERDATEN</p><h2>Deine Einstellungen</h2><div className="settings-fields"><label>Name<input value={form.name || ''} onChange={event => update('name', event.target.value)}/></label><label>Team (optional)<input placeholder="z. B. Alpine Riders" value={form.team || ''} onChange={event => update('team', event.target.value)}/></label><label>Größe (cm)<input inputMode="numeric" value={form.height || ''} onChange={event => update('height', event.target.value)}/></label><label>Gewicht (kg)<input inputMode="decimal" value={form.weight || ''} onChange={event => update('weight', event.target.value)}/></label><label>Geschlecht<select value={form.gender || ''} onChange={event => update('gender', event.target.value)}><option value="">Bitte auswählen</option><option>Männlich</option><option>Weiblich</option><option>Divers</option><option>Keine Angabe</option></select></label><label>Fahrniveau<select value={form.level || 'Fortgeschritten'} onChange={event => update('level', event.target.value)}><option>Einsteiger</option><option>Fortgeschritten</option><option>Ambitioniert</option><option>Elite Rider</option></select></label></div><div className="settings-actions"><button className="secondary-button" onClick={onClose}>Abbrechen</button><button className="primary-button" onClick={() => onSave(form)}>Speichern</button></div></section></div> }
