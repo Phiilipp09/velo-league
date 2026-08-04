@@ -4,6 +4,7 @@ import { Card, Jersey, SectionHeading } from '../components/Ui'
 import { getChallenges, getGroupMembers, getJerseyHistory, getPointAdjustments, getProfile, getRides, getSeasonCardSnapshots, saveProfile, syncJerseyHistory, type JerseyHistory, type LiveGroup, type SeasonCardSnapshot } from '../lib/supabaseData'
 import { jerseyLeaders, seasonStandings, type JerseyKey } from '../lib/seasonRules'
 import { calculateRiderRating, type SeasonStats } from '../lib/liveSeason'
+import '../styles/profile-rating.css'
 
 type RiderProfile = { name?: string; team?: string; gender?: string; height?: string; weight?: string; level?: string; bikeBrand?: string; bikeModel?: string; bikeType?: string }
 type ProfileTab = 'card' | 'performance' | 'career'
@@ -236,7 +237,7 @@ function BadgeDetail({ badge, onClose }: { badge: BadgeInfo; onClose: () => void
 function RatingRadar({ ratings }: { ratings: Rating[] }) {
   const visible = ratings.slice(0, 5)
   const points = visible.map((rating, index) => { const angle = -Math.PI / 2 + index * (Math.PI * 2 / visible.length); const radius = 31 * rating.value / 100; return `${50 + Math.cos(angle) * radius},${50 + Math.sin(angle) * radius}` }).join(' ')
-  const labels = [[50, 7], [91, 35], [76, 91], [24, 91], [9, 35]]
+  const labels = [[50, 6], [93, 34], [78, 94], [22, 94], [7, 34]]
   return <div className="rating-radar"><svg viewBox="0 0 100 100" aria-label="Stärkenprofil"><polygon className="rating-radar-grid" points="50,12 86,38 72,81 28,81 14,38"/><polygon className="rating-radar-grid inner" points="50,27 68,40 61,62 39,62 32,40"/><polygon className="rating-radar-fill" points={points}/>{visible.map((rating, index) => <g key={rating.label}><text x={labels[index][0]} y={labels[index][1]}>{rating.label}</text><text className="rating-radar-value" x={labels[index][0]} y={labels[index][1] + (index > 1 ? -4 : 5)}>{rating.value}</text></g>)}</svg></div>
 }
 function PerformancePanel({ ratings, overall, stats, bike, onSettings }: { ratings: Rating[]; overall: number; stats: SeasonStats; bike: RiderProfile; onSettings: () => void }) {

@@ -1,17 +1,29 @@
-import { useMemo, useState } from 'react'
-import { Activity, Bike, CalendarDays, Clock3, Flag, House, LogOut, Mountain, Route, Trophy, UserRound, Users, X } from 'lucide-react'
+import { Activity, Bike, CalendarDays, Flag, House, LogOut, Trophy, UserRound, Users } from 'lucide-react'
 import type { Page } from '../App'
-import { calculateRiderRating, type SeasonStats } from '../lib/liveSeason'
+import type { SeasonStats } from '../lib/liveSeason'
 
-const nav:{id:Page;label:string;icon:typeof House;mobile?:boolean}[]=[{id:'dashboard',label:'Start',icon:House,mobile:true},{id:'group',label:'Gruppe',icon:Users,mobile:true},{id:'league',label:'Liga',icon:Trophy,mobile:true},{id:'activities',label:'Fahrten',icon:Activity,mobile:true},{id:'calendar',label:'Kalender',icon:CalendarDays},{id:'challenges',label:'Challenges',icon:Flag},{id:'profile',label:'Profil',icon:UserRound,mobile:true}]
-const format=(value:number)=>Math.round(value).toLocaleString('de-DE')
-const coordinates=(values:number[])=>values.map((value,index)=>{const angle=-Math.PI/2+index*Math.PI/2;const radius=10+value*.38;return `${50+Math.cos(angle)*radius},${50+Math.sin(angle)*radius}`}).join(' ')
+const nav: { id: Page; label: string; icon: typeof House; mobile?: boolean }[] = [
+  { id: 'dashboard', label: 'Start', icon: House, mobile: true },
+  { id: 'group', label: 'Gruppe', icon: Users, mobile: true },
+  { id: 'league', label: 'Liga', icon: Trophy, mobile: true },
+  { id: 'activities', label: 'Fahrten', icon: Activity, mobile: true },
+  { id: 'calendar', label: 'Kalender', icon: CalendarDays },
+  { id: 'challenges', label: 'Challenges', icon: Flag },
+  { id: 'profile', label: 'Profil', icon: UserRound, mobile: true },
+]
 
-export function Sidebar({page,setPage,demo=false,stats}:{page:Page;setPage:(page:Page)=>void;demo?:boolean;stats:SeasonStats}){
-  const[ratingOpen,setRatingOpen]=useState(false)
-  const riderRating=useMemo(()=>demo?{overall:94,mountain:96,endurance:92,activity:98,competition:86,form:94,activeWeeks:8,provisional:false}:calculateRiderRating(stats.rides,{points:stats.points}),[demo,stats])
-  const ratings=[riderRating.mountain,riderRating.endurance,riderRating.activity,riderRating.competition]
-  const overall=riderRating.overall
-  const logout=()=>{['velo-session','velo-supabase-access-token','velo-demo-mode'].forEach(key=>{localStorage.removeItem(key);sessionStorage.removeItem(key)});window.location.assign(window.location.pathname)}
-  return <nav className="sidebar"><button className="brand brand-button" onClick={()=>setPage('dashboard')} aria-label="Zur Startseite"><span className="brand-mark"><Bike size={24}/></span><span>VELO <b>LEAGUE</b></span></button><div className="nav-list">{nav.map(item=>{const Icon=item.icon;return <button key={item.id} onClick={()=>setPage(item.id)} className={`${page===item.id?'nav-item active':'nav-item'} ${item.mobile?'mobile-nav':'desktop-only-mobile'}`}><Icon size={19}/><span>{item.label}</span></button>})}</div><button className="rating-sidebar-card" onClick={()=>setRatingOpen(true)} aria-label="Fahrer-Rating öffnen"><div><span>FAHRER-RATING</span><strong>OVR {overall}</strong><small>{riderRating.provisional?'vorläufig · noch im Aufbau':'Leistung ansehen'}</small></div><svg viewBox="0 0 100 100" aria-hidden="true"><polygon className="rating-grid" points="50,8 92,50 50,92 8,50"/><polygon className="rating-fill" points={coordinates(ratings)}/></svg></button><button className="logout-button" onClick={logout}><LogOut size={16}/> Abmelden</button>{ratingOpen&&<div className="modal-backdrop season-insights-backdrop" onClick={()=>setRatingOpen(false)}><section className="season-insights rating-insights" onClick={event=>event.stopPropagation()}><button className="modal-close" onClick={()=>setRatingOpen(false)}><X size={18}/></button><p className="eyebrow">FAHRER-RATING</p><h2>Deine aktuelle Form</h2><div className="rating-insight-overview"><div><span>OVR</span><strong>{overall}</strong><small>{riderRating.provisional?'vorläufiges Rating':'aus echten Saisonwerten'}</small></div><svg viewBox="0 0 100 100" aria-hidden="true"><polygon className="rating-grid" points="50,8 92,50 50,92 8,50"/><polygon className="rating-fill" points={coordinates(ratings)}/></svg></div><div className="season-insight-grid"><div><Mountain/><b>{ratings[0]}</b><span>Berg</span></div><div><Route/><b>{ratings[1]}</b><span>Ausdauer</span></div><div><Activity/><b>{ratings[2]}</b><span>Aktivität</span></div><div><Trophy/><b>{ratings[3]}</b><span>Wettbewerb</span></div></div><p className="rating-insight-copy">Form: {riderRating.form}/100 · aktive Wochen: {riderRating.activeWeeks}/8. Nach längeren Pausen sinkt zuerst die Form, danach die Aktivitätswertung.</p></section></div>}</nav>
+export function Sidebar({ page, setPage }: { page: Page; setPage: (page: Page) => void; demo?: boolean; stats: SeasonStats }) {
+  const logout = () => {
+    ;['velo-session', 'velo-supabase-access-token', 'velo-demo-mode'].forEach(key => {
+      localStorage.removeItem(key)
+      sessionStorage.removeItem(key)
+    })
+    window.location.assign(window.location.pathname)
+  }
+
+  return <nav className="sidebar">
+    <button className="brand brand-button" onClick={() => setPage('dashboard')} aria-label="Zur Startseite"><span className="brand-mark"><Bike size={24}/></span><span>VELO <b>LEAGUE</b></span></button>
+    <div className="nav-list">{nav.map(item => { const Icon = item.icon; return <button key={item.id} onClick={() => setPage(item.id)} className={`${page === item.id ? 'nav-item active' : 'nav-item'} ${item.mobile ? 'mobile-nav' : 'desktop-only-mobile'}`}><Icon size={19}/><span>{item.label}</span></button> })}</div>
+    <button className="logout-button" onClick={logout}><LogOut size={16}/> Abmelden</button>
+  </nav>
 }

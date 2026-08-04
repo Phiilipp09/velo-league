@@ -50,14 +50,14 @@ begin
     winner := c.challenger_id;
   else
     if c.target_unit = 'hm' then
-      select coalesce(sum(elevation_m), 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at <= c.ends_at;
-      select coalesce(sum(elevation_m), 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at <= c.ends_at;
+      select coalesce(sum(elevation_m), 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
+      select coalesce(sum(elevation_m), 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
     elsif c.target_unit = 'pts' then
-      select coalesce(sum(points), 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at <= c.ends_at;
-      select coalesce(sum(points), 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at <= c.ends_at;
+      select coalesce(sum(points), 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
+      select coalesce(sum(points), 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
     else
-      select coalesce(sum(distance_m) / 1000.0, 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at <= c.ends_at;
-      select coalesce(sum(distance_m) / 1000.0, 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at <= c.ends_at;
+      select coalesce(sum(distance_m) / 1000.0, 0) into challenger_value from public.rides where group_id = c.group_id and user_id = c.challenger_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
+      select coalesce(sum(distance_m) / 1000.0, 0) into opponent_value from public.rides where group_id = c.group_id and user_id = c.opponent_id and started_at >= c.starts_at and started_at < (c.ends_at::date + interval '1 day');
     end if;
     if challenger_value < c.target_value and opponent_value < c.target_value then return null; end if;
     winner := case when challenger_value >= c.target_value and opponent_value >= c.target_value then case when challenger_value >= opponent_value then c.challenger_id else c.opponent_id end when challenger_value >= c.target_value then c.challenger_id else c.opponent_id end;

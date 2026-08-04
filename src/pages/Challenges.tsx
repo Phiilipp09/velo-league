@@ -11,7 +11,9 @@ type JerseyKey = 'yellow' | 'polka' | 'white' | 'red' | 'violet'
 type JerseyOption = { key: JerseyKey; label: string; holderId: string; holderName: string; gap: number; unit: Exclude<Unit, 'km'>; reward: string }
 
 const progress = (challenge: LiveChallenge, riderId: string, rides: LiveRide[]) => {
-  const relevant = rides.filter(ride => ride.user_id === riderId && new Date(ride.started_at) >= new Date(challenge.starts_at || challenge.created_at) && new Date(ride.started_at) <= new Date(challenge.ends_at))
+  const endsAt = new Date(challenge.ends_at)
+  endsAt.setHours(23, 59, 59, 999)
+  const relevant = rides.filter(ride => ride.user_id === riderId && new Date(ride.started_at) >= new Date(challenge.starts_at || challenge.created_at) && new Date(ride.started_at) <= endsAt)
   if (challenge.target_unit === 'hm') return relevant.reduce((sum, ride) => sum + ride.elevation_m, 0)
   if (challenge.target_unit === 'pts') return relevant.reduce((sum, ride) => sum + ride.points, 0)
   return relevant.reduce((sum, ride) => sum + ride.distance_m / 1000, 0)

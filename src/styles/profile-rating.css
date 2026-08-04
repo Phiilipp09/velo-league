@@ -1,0 +1,14 @@
+.overall-rating {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 95% 33%, 78% 100%, 22% 100%, 5% 33%);
+}
+
+.overall-rating small { display: none !important; }
+
+.rating-radar text {
+  font: 800 5.4px Manrope;
+}
+
+.rating-radar .rating-radar-value {
+  font: 900 5.8px 'Barlow Condensed';
+}
