@@ -1,4 +1,8 @@
 .overall-rating {
+  width: 110px;
+  min-width: 110px;
+  height: 110px;
+  padding: 15px 8px 11px;
   border-radius: 0;
   clip-path: polygon(50% 0, 95% 33%, 78% 100%, 22% 100%, 5% 33%);
 }
@@ -11,4 +15,14 @@
 
 .rating-radar .rating-radar-value {
   font: 900 5.8px 'Barlow Condensed';
+}
+
+@media (max-width: 520px) {
+  .performance-rating-head .overall-rating {
+    width: 104px;
+    min-width: 104px;
+    height: 104px;
+  }
+
+  .overall-rating strong { font-size: 44px; }
 }

@@ -68,7 +68,15 @@ begin
   insert into public.season_point_adjustments(group_id, user_id, challenge_id, points, reason)
   values(c.group_id, winner, c.id, bonus, 'Challenge-Sieg: ' || c.title)
   on conflict(challenge_id) do nothing;
-  if to_regprocedure('public.sync_jersey_history(uuid)') is not null then perform public.sync_jersey_history(c.group_id); end if;
+  -- Eine defekte oder alte Trikot-Historie darf einen Challenge-Sieg niemals
+  -- zurückrollen. Die Trikote werden beim nächsten regulären Sync nachgezogen.
+  if to_regprocedure('public.sync_jersey_history(uuid)') is not null then
+    begin
+      perform public.sync_jersey_history(c.group_id);
+    exception when others then
+      null;
+    end;
+  end if;
   return winner;
 end;
 $$;
@@ -82,7 +90,11 @@ begin
   for challenge_record in select * from public.challenges where group_id = new.group_id and status = 'accepted' loop
     winner := public.complete_challenge(challenge_record.id);
     if winner is not null and to_regprocedure('public.notify_challenge(uuid,text)') is not null then
-      perform public.notify_challenge(challenge_record.id, 'completed');
+      begin
+        perform public.notify_challenge(challenge_record.id, 'completed');
+      exception when others then
+        null;
+      end;
     end if;
   end loop;
   return new;
