@@ -79,7 +79,8 @@ export async function createChallenge(input: Omit<LiveChallenge, 'id' | 'created
   return rows[0]
 }
 export async function updateChallengeStatus(id: string, status: LiveChallenge['status']) {
-  const rows = await db<LiveChallenge[]>(`challenges?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status }) }, 'return=representation')
+  const body = status === 'accepted' ? { status, starts_at: new Date().toISOString() } : { status }
+  const rows = await db<LiveChallenge[]>(`challenges?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }, 'return=representation')
   return rows[0]
 }
 export const completeChallenge = (challengeId: string) => db<string | null>('rpc/complete_challenge', { method: 'POST', body: JSON.stringify({ target_challenge_id: challengeId }) }, 'return=representation')
