@@ -12,6 +12,12 @@ export type SeasonStats = {
 
 export const emptySeasonStats: SeasonStats = { rides: [], kilometers: 0, elevation: 0, points: 0, movingSeconds: 0, longestKilometers: 0 }
 
+export function calculateOverall(ratings: number[], hasPerformance: boolean) {
+  if (!hasPerformance) return 30
+  const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+  return Math.min(99, Math.max(30, Math.round(30 + average * 0.7)))
+}
+
 export function calculateSeasonStats(rides: LiveRide[]): SeasonStats {
   return rides.reduce<SeasonStats>((stats, ride) => ({
     rides: [...stats.rides, ride],

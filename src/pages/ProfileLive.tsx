@@ -3,7 +3,7 @@ import { Bike, Check, ChevronRight, Crown, Download, Flame, LogOut, Medal, Mount
 import { Card, Jersey, SectionHeading } from '../components/Ui'
 import { getChallenges, getGroupMembers, getJerseyHistory, getPointAdjustments, getProfile, getRides, getSeasonCardSnapshots, saveProfile, syncJerseyHistory, type JerseyHistory, type LiveGroup, type SeasonCardSnapshot } from '../lib/supabaseData'
 import { jerseyLeaders, seasonStandings, type JerseyKey } from '../lib/seasonRules'
-import type { SeasonStats } from '../lib/liveSeason'
+import { calculateOverall, type SeasonStats } from '../lib/liveSeason'
 
 type RiderProfile = { name?: string; team?: string; gender?: string; height?: string; weight?: string; level?: string; bikeBrand?: string; bikeModel?: string; bikeType?: string }
 type ProfileTab = 'card' | 'performance' | 'career'
@@ -78,7 +78,7 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
   const logout = () => { ['velo-session', 'velo-supabase-access-token', 'velo-demo-mode'].forEach(key => { localStorage.removeItem(key); sessionStorage.removeItem(key) }); window.location.assign(window.location.pathname) }
   const totalPoints = stats.points + adjustmentPoints
   const ratings = makeRatings(stats, totalPoints, wins, jerseys.length)
-  const overall = stats.rides.length ? Math.round(ratings.reduce((total, rating) => total + rating.value, 0) / ratings.length) : 30
+  const overall = calculateOverall(ratings.map(rating => rating.value), Boolean(stats.rides.length || totalPoints))
   const badges = makeBadges(stats, totalPoints, wins)
 
   return <div className="page">
