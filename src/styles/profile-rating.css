@@ -24,6 +24,30 @@
 .jersey-special-card { isolation: isolate; }
 .jersey-special-rider { position: absolute; right: -16px; bottom: -8px; z-index: -1; width: 62%; height: 88%; object-fit: contain; object-position: right bottom; opacity: .58; filter: drop-shadow(-8px 5px 14px #000c); }
 .jersey-special-card > div, .jersey-special-card > b { position: relative; z-index: 1; }
+.jersey-special-card.selected { border-color: #f5d928; box-shadow: 0 0 20px rgba(245, 217, 40, .20), inset 0 1px rgba(255,255,255,.08); }
+
+/* Das Trikot ist farbig – die Sammelkarte bleibt immer VELO-schwarz. */
+.jersey-special-card.jersey-special-polka,
+.jersey-special-card.jersey-special-white,
+.jersey-special-card.jersey-special-red,
+.jersey-special-card.jersey-special-violet {
+  border-color: #5b511d;
+  background: linear-gradient(145deg, #171914, #0e1010);
+}
+.jersey-special-card.jersey-special-polka:after,
+.jersey-special-card.jersey-special-white:after,
+.jersey-special-card.jersey-special-red:after,
+.jersey-special-card.jersey-special-violet:after {
+  background: radial-gradient(circle, rgba(245, 217, 40, .18), transparent 68%);
+}
+.jersey-special-card.jersey-special-polka .special-card-top span,
+.jersey-special-card.jersey-special-white .special-card-top span,
+.jersey-special-card.jersey-special-red .special-card-top span,
+.jersey-special-card.jersey-special-violet .special-card-top span,
+.jersey-special-card.jersey-special-polka p,
+.jersey-special-card.jersey-special-white p,
+.jersey-special-card.jersey-special-red p,
+.jersey-special-card.jersey-special-violet p { color: #f5d928; }
 
 @media (max-width: 520px) {
   .performance-rating-head .overall-rating {

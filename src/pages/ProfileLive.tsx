@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bike, Check, ChevronRight, Crown, Download, Flame, LogOut, Medal, Mountain, Settings, Share2, Trophy, X, Zap } from 'lucide-react'
 import { Card, Jersey, SectionHeading } from '../components/Ui'
 import { getChallenges, getGroupMembers, getJerseyHistory, getPointAdjustments, getProfile, getRides, getSeasonCardSnapshots, saveProfile, syncJerseyHistory, type JerseyHistory, type LiveGroup, type SeasonCardSnapshot } from '../lib/supabaseData'
@@ -23,7 +23,10 @@ const riderImageForJersey: Record<string, string> = {
   green: '/images/rider-card-green-v3.png',
   white: '/images/rider-card-white.png',
   yellow: '/images/rider-card-cyclist.png',
+  red: '/images/rider-card-red.png',
+  violet: '/images/rider-card-violet.png',
 }
+const jerseyPriority: JerseyKey[] = ['yellow', 'polka', 'white', 'red', 'violet']
 
 export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: string; userId?: string; groups: LiveGroup[]; stats: SeasonStats; hasGroup: boolean }) {
   const [profile, setProfile] = useState<RiderProfile>(() => JSON.parse(localStorage.getItem(`velo-rider-profile:${user}`) || '{}'))
@@ -38,6 +41,8 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
   const [selectedJerseyArchive, setSelectedJerseyArchive] = useState<JerseyHistory | null>(null)
   const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null)
   const [tab, setTab] = useState<ProfileTab>('card')
+  const [activeCardJersey, setActiveCardJersey] = useState<JerseyKey | null>(null)
+  const riderCardRef = useRef<HTMLDivElement>(null)
   const displayName = profile.name || user
   const active = groups.find(group => group.id === (userId ? localStorage.getItem(`velo-active-group:${userId}`) : '')) || groups[0]
 
@@ -88,15 +93,21 @@ export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: s
   const ratings = makeRatings(stats, totalPoints, wins, jerseys.length, riderRating)
   const overall = riderRating.overall
   const badges = makeBadges(stats, totalPoints, wins)
+  const prioritizedJerseys = jerseys.slice().sort((left, right) => jerseyPriority.indexOf(left) - jerseyPriority.indexOf(right))
+  const displayedJersey = activeCardJersey && jerseys.includes(activeCardJersey) ? activeCardJersey : prioritizedJerseys[0]
+  const selectCardJersey = (jersey: JerseyKey) => {
+    setActiveCardJersey(jersey)
+    window.setTimeout(() => riderCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
 
   return <div className="page">
     <Card className="profile-hero"><button aria-label="Einstellungen öffnen" onClick={() => setSettings(true)} className="profile-settings"><Settings size={18}/></button><div className="profile-avatar">{displayName.slice(0, 1).toUpperCase()}</div><div><p className="eyebrow">DEIN FAHRERPROFIL</p><h2>{displayName}</h2><p>{profile.level || 'Rider'} · {stats.rides.length ? `${stats.rides.length} Fahrten in dieser Saison` : 'Saisonstart'}</p></div></Card>
     <div className="profile-tabs" role="tablist"><button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>Fahrerkarte</button><button className={tab === 'performance' ? 'active' : ''} onClick={() => setTab('performance')}>Leistung</button><button className={tab === 'career' ? 'active' : ''} onClick={() => setTab('career')}>Karriere</button></div>
     {tab === 'card' && <>
-    <RiderCard name={displayName} group={active} team={profile.team} level={profile.level} number={riderNumber} jersey={jerseys[0]} points={totalPoints} wins={wins} kilometers={stats.kilometers} elevation={stats.elevation} overall={overall}/>
+    <div ref={riderCardRef}><RiderCard name={displayName} group={active} team={profile.team} level={profile.level} number={riderNumber} jersey={displayedJersey} points={totalPoints} wins={wins} kilometers={stats.kilometers} elevation={stats.elevation} overall={overall}/></div>
     <Card className="card-rating-summary"><div><span>FAHRER-RATING</span><strong>OVR {overall}</strong></div><p>{stats.rides.length ? 'Dein Rating wird ausschließlich aus echten Saisonleistungen berechnet.' : 'Rookie-Startwert – deine erste Fahrt setzt die Leistungswerte in Bewegung.'}</p></Card>
     <SectionHeading eyebrow="DEINE AKTUELLEN TITEL" title="Trikot-Spezialkarten"/>
-    <JerseySpecialCards jerseys={jerseys} onSelect={setSelectedJersey}/>
+    <JerseySpecialCards jerseys={prioritizedJerseys} selected={displayedJersey} onSelect={selectCardJersey}/>
     {!jerseys.length && <Card className="jersey-next-goal"><Jersey type="yellow" small/><div><strong>Deine erste Wertung wartet.</strong><p>{hasGroup ? 'Sammle Saisonpunkte und übernimm die Führung für das Gelbe Trikot.' : 'Tritt einer Liga bei, um deine erste Wertung zu fahren.'}</p></div></Card>}
     </>}
     {tab === 'performance' && <PerformancePanel ratings={ratings} overall={overall} stats={stats} bike={profile} onSettings={() => setSettings(true)}/>}
@@ -193,11 +204,11 @@ function RiderCard({ name, group, team, level, number, jersey, points, wins, kil
   return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON {group?.season_year || new Date().getFullYear()}</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small><i>RIDE FURTHER</i></div><div className="rider-card-avatar"><img src={riderImage} alt={`Rennradfahrer im ${jerseyTitle[jersey || 'yellow']} `}/><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><button type="button" className="rider-card-export" onClick={() => void exportPng()}>{exportNotice ? <Check size={15}/> : <Download size={15}/>} {exportNotice || 'Als PNG speichern'}</button></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
 }
 
-function JerseySpecialCards({ jerseys, onSelect }: { jerseys: JerseyKey[]; onSelect: (type: JerseyKey) => void }) {
+function JerseySpecialCards({ jerseys, selected, onSelect }: { jerseys: JerseyKey[]; selected?: JerseyKey; onSelect: (type: JerseyKey) => void }) {
   if (!jerseys.length) return <Card className="special-card-empty"><Medal size={22}/><div><strong>Deine erste Spezialkarte wartet.</strong><p>Übernimm eine Wertung in deiner Liga und sie erscheint automatisch hier.</p></div></Card>
   return <div className="special-card-grid">{jerseys.map(type => {
     const copy = jerseyCardCopy[type]
-    return <button className={`jersey-special-card jersey-special-${type}`} key={type} onClick={() => onSelect(type)}><img className="jersey-special-rider" src={riderImageForJersey[type] || '/images/rider-card-cyclist.png'} alt=""/><div className="special-card-top"><Jersey type={type} small/><span>AKTUELL</span></div><div><p>{copy.title}</p><h3>{copy.label}</h3><small>{copy.description}</small></div><b>Spielerkarte öffnen</b></button>
+    return <button className={`jersey-special-card jersey-special-${type} ${selected === type ? 'selected' : ''}`} key={type} onClick={() => onSelect(type)}><img className="jersey-special-rider" src={riderImageForJersey[type] || '/images/rider-card-cyclist.png'} alt=""/><div className="special-card-top"><Jersey type={type} small/><span>{selected === type ? 'ANGEZEIGT' : 'AKTUELL'}</span></div><div><p>{copy.title}</p><h3>{copy.label}</h3><small>{copy.description}</small></div><b>{selected === type ? 'Oben angezeigt' : 'Als Fahrerkarte anzeigen'}</b></button>
   })}</div>
 }
 
