@@ -17,8 +17,13 @@
   font: 900 5.8px 'Barlow Condensed';
 }
 
-.rider-card-avatar { z-index: 1; }
-.rider-card-avatar > img { display: block; z-index: 1; }
+.rider-card-avatar { z-index: 1; background-repeat: no-repeat; background-position: right bottom; background-size: contain; }
+.rider-card-yellow .rider-card-avatar { background-image: url('/images/rider-card-cyclist.png'); }
+.rider-card-polka .rider-card-avatar { background-image: url('/images/rider-card-polka.png'); }
+.rider-card-white .rider-card-avatar { background-image: url('/images/rider-card-white.png'); }
+.rider-card-red .rider-card-avatar { background-image: url('/images/rider-card-red.png'); }
+.rider-card-violet .rider-card-avatar { background-image: url('/images/rider-card-violet.png'); }
+.rider-card-avatar > img { display: none !important; }
 .rider-card-avatar .jersey { z-index: 2; }
 
 .jersey-special-card { isolation: isolate; }
