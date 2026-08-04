@@ -3,10 +3,10 @@ import { Crown, SlidersHorizontal, Trophy, X } from 'lucide-react'
 import type { Page } from '../App'
 import { Card, EmptyGuide, Jersey, SectionHeading } from '../components/Ui'
 import { getGroupMembers, getPointAdjustments, getRides, type LiveGroup, type LiveMember, type LiveRide, type PointAdjustment } from '../lib/supabaseData'
-import { calculateOverall } from '../lib/liveSeason'
+import { calculateRiderRating, type RiderRating } from '../lib/liveSeason'
 
 type Filter = 'Gesamt' | 'Berg' | 'Kilometer' | 'Sprint' | 'Young Rider'
-export type LeagueRider = { id: string; name: string; team?: string; riderNumber?: number | null; jersey?: string; points: number; elevation: number; kilometers: number; sprint: number; young: number; week: number; month: number; eligibleYoung: boolean; overall: number; longestKilometers: number; movingSeconds: number; ridesCount: number }
+export type LeagueRider = { id: string; name: string; team?: string; riderNumber?: number | null; jersey?: string; points: number; elevation: number; kilometers: number; sprint: number; young: number; week: number; month: number; eligibleYoung: boolean; overall: number; rating: RiderRating; longestKilometers: number; movingSeconds: number; ridesCount: number }
 const filters: Filter[] = ['Gesamt', 'Berg', 'Kilometer', 'Sprint', 'Young Rider']
 const value = (rider: LeagueRider, filter: Filter) => filter === 'Berg' ? rider.elevation : filter === 'Kilometer' ? rider.kilometers : filter === 'Sprint' ? rider.sprint : filter === 'Young Rider' ? rider.young : rider.points
 const dateAfter = (days: number) => new Date(Date.now() - days * 86400000)
@@ -28,9 +28,8 @@ function ridersFrom(members: LiveMember[], rides: LiveRide[], bonuses: PointAdju
     const kilometers = own.reduce((total, ride) => total + ride.distance_m / 1000, 0)
     const movingSeconds = own.reduce((total, ride) => total + (ride.moving_time_s || 0), 0)
     const longestKilometers = own.reduce((best, ride) => Math.max(best, ride.distance_m / 1000), 0)
-    const ratings = [elevation / 90 + (kilometers ? elevation / kilometers : 0) * 2, kilometers / 9 + longestKilometers / 3 + movingSeconds / 3600 * 2, own.length * 7, points / 14]
-    const overall = calculateOverall(ratings, Boolean(own.length || points))
-    return { id: member.user_id, name: member.profiles?.display_name || 'Rider', team: member.profiles?.team_name || undefined, riderNumber: member.rider_number, points, elevation, kilometers, sprint: 0, young: eligibleYoung ? points : 0, week: sum(own.filter(ride => new Date(ride.started_at) >= dateAfter(7))) + bonus, month: sum(own.filter(ride => new Date(ride.started_at) >= dateAfter(30))) + bonus, eligibleYoung, overall, longestKilometers, movingSeconds, ridesCount: own.length }
+    const rating = calculateRiderRating(own, { points })
+    return { id: member.user_id, name: member.profiles?.display_name || 'Rider', team: member.profiles?.team_name || undefined, riderNumber: member.rider_number, points, elevation, kilometers, sprint: 0, young: eligibleYoung ? points : 0, week: sum(own.filter(ride => new Date(ride.started_at) >= dateAfter(7))) + bonus, month: sum(own.filter(ride => new Date(ride.started_at) >= dateAfter(30))) + bonus, eligibleYoung, overall: rating.overall, rating, longestKilometers, movingSeconds, ridesCount: own.length }
   })
 }
 function leader(riders: LeagueRider[], key: keyof LeagueRider, only?: (rider: LeagueRider) => boolean) { return riders.filter(rider => Number(rider[key]) > 0 && (!only || only(rider))).sort((a, b) => Number(b[key]) - Number(a[key]))[0] }

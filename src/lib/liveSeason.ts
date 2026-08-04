@@ -12,10 +12,32 @@ export type SeasonStats = {
 
 export const emptySeasonStats: SeasonStats = { rides: [], kilometers: 0, elevation: 0, points: 0, movingSeconds: 0, longestKilometers: 0 }
 
-export function calculateOverall(ratings: number[], hasPerformance: boolean) {
-  if (!hasPerformance) return 30
-  const average = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
-  return Math.min(99, Math.max(30, Math.round(30 + average * 0.7)))
+export type RiderRating = { overall: number; mountain: number; endurance: number; activity: number; competition: number; form: number; activeWeeks: number; provisional: boolean }
+type RatingOptions = { points?: number; wins?: number; jerseys?: number }
+const ratingClamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)))
+
+export function calculateRiderRating(rides: LiveRide[], options: RatingOptions = {}): RiderRating {
+  const now = Date.now()
+  const inDays = (days: number) => rides.filter(ride => new Date(ride.started_at).getTime() >= now - days * 86_400_000)
+  const windowRides = inDays(56)
+  const recentRides = inDays(14)
+  const kilometers = windowRides.reduce((sum, ride) => sum + ride.distance_m / 1000, 0)
+  const elevation = windowRides.reduce((sum, ride) => sum + ride.elevation_m, 0)
+  const hours = windowRides.reduce((sum, ride) => sum + (ride.moving_time_s || 0) / 3600, 0)
+  const longest = windowRides.reduce((best, ride) => Math.max(best, ride.distance_m / 1000), 0)
+  const activeWeeks = new Set(windowRides.map(ride => { const date = new Date(ride.started_at); const monday = new Date(date); monday.setDate(date.getDate() - ((date.getDay() + 6) % 7)); return monday.toISOString().slice(0, 10) })).size
+  const newestRide = rides.reduce<number | null>((latest, ride) => Math.max(latest || 0, new Date(ride.started_at).getTime()), null)
+  const daysSinceRide = newestRide ? Math.max(0, Math.floor((now - newestRide) / 86_400_000)) : 99
+  const mountain = ratingClamp(elevation / 4500 * 70 + (kilometers ? elevation / kilometers : 0) * 2.5)
+  const endurance = ratingClamp(kilometers / 350 * 60 + hours / 20 * 20 + longest / 120 * 20)
+  const activity = ratingClamp(windowRides.length / 12 * 55 + activeWeeks / 8 * 45)
+  const competition = ratingClamp((options.points || 0) / 1800 * 65 + (options.wins || 0) * 10 + (options.jerseys || 0) * 5)
+  const recency = Math.max(0, 100 - Math.max(0, daysSinceRide - 1) * 5)
+  const form = ratingClamp(recentRides.length * 22 * 0.65 + recency * 0.35)
+  const weighted = mountain * .25 + endurance * .30 + activity * .20 + competition * .15 + form * .10
+  const hasPerformance = Boolean(rides.length || options.points || options.wins)
+  const overall = hasPerformance ? Math.min(99, Math.max(30, Math.round(30 + weighted * .7))) : 30
+  return { overall, mountain, endurance, activity, competition, form, activeWeeks, provisional: windowRides.length < 5 || activeWeeks < 4 }
 }
 
 export function calculateSeasonStats(rides: LiveRide[]): SeasonStats {
