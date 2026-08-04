@@ -18,6 +18,12 @@ const jerseyCardCopy: Record<JerseyKey, { title: string; label: string; descript
   red: { title: 'FORM DER WOCHE', label: 'Weekly Form', description: 'Du hast die meisten Punkte der letzten 7 Tage.' },
   violet: { title: 'FORM DES MONATS', label: 'Monthly Form', description: 'Du hast die meisten Punkte der letzten 30 Tage.' },
 }
+const riderImageForJersey: Record<string, string> = {
+  polka: '/images/rider-card-polka.png',
+  green: '/images/rider-card-green-v3.png',
+  white: '/images/rider-card-white.png',
+  yellow: '/images/rider-card-cyclist.png',
+}
 
 export function ProfileLive({ user, userId, groups, stats, hasGroup }: { user: string; userId?: string; groups: LiveGroup[]; stats: SeasonStats; hasGroup: boolean }) {
   const [profile, setProfile] = useState<RiderProfile>(() => JSON.parse(localStorage.getItem(`velo-rider-profile:${user}`) || '{}'))
@@ -123,6 +129,7 @@ function RiderCard({ name, group, team, level, number, jersey, points, wins, kil
   const [shareNotice, setShareNotice] = useState<string | null>(null)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
   const cardJersey = jersey || 'plain'
+  const riderImage = riderImageForJersey[cardJersey] || '/images/rider-card-white.png'
   const rarity = points >= 2500 ? 'LEGEND' : points >= 1200 ? 'GOLD' : points >= 500 ? 'SILBER' : 'BRONZE'
   const share = async () => {
     const title = `${name} · VELO LEAGUE Fahrerkarte`
@@ -183,14 +190,14 @@ function RiderCard({ name, group, team, level, number, jersey, points, wins, kil
       window.setTimeout(() => setExportNotice(null), 2800)
     }, 'image/png')
   }
-  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON {group?.season_year || new Date().getFullYear()}</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small><i>RIDE FURTHER</i></div><div className="rider-card-avatar"><img src="/images/rider-card-cyclist.png" alt="Rennradfahrer in gelbem Trikot"/><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><button type="button" className="rider-card-export" onClick={() => void exportPng()}>{exportNotice ? <Check size={15}/> : <Download size={15}/>} {exportNotice || 'Als PNG speichern'}</button></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
+  return <section className={`rider-card rider-card-${cardJersey}`} aria-label="Deine VELO LEAGUE Fahrerkarte"><div className="rider-card-glow"/><header><div className="rider-card-brand">VELO <b>LEAGUE</b></div><span>SEASON {group?.season_year || new Date().getFullYear()}</span></header><div className="rider-card-content"><div className="rider-card-identity"><p>FAHRERKARTE</p><strong>#{String(number || 0).padStart(2, '0')}</strong><h2>{name}</h2><span>{team || 'INDEPENDENT RIDERS'}</span><small>{group?.name || 'NOCH KEINE LIGA'}</small><i>RIDE FURTHER</i></div><div className="rider-card-avatar"><img src={riderImage} alt={`Rennradfahrer im ${jerseyTitle[jersey || 'yellow']} `}/><Jersey type={cardJersey}/></div></div><div className="rider-card-stats"><div><b>{format(points)}</b><span>GESAMTPUNKTE</span></div><div><b>{wins}</b><span>ETAPPENSIEGE</span></div><div><b>{format(kilometers)} km</b><span>DISTANZ</span></div><div><b>{format(elevation)} hm</b><span>HÖHENMETER</span></div></div><div className="rider-card-share-row"><button type="button" className="rider-card-share" onClick={() => void share()}>{shareNotice ? <Check size={15}/> : <Share2 size={15}/>} {shareNotice || 'Fahrerkarte teilen'}</button><button type="button" className="rider-card-export" onClick={() => void exportPng()}>{exportNotice ? <Check size={15}/> : <Download size={15}/>} {exportNotice || 'Als PNG speichern'}</button></div><footer><span>{level || 'RIDER'} · {jersey ? jerseyTitle[jersey] : 'AUF DEM WEG ZUM ERSTEN TRIKOT'}</span><b>{rarity}</b></footer></section>
 }
 
 function JerseySpecialCards({ jerseys, onSelect }: { jerseys: JerseyKey[]; onSelect: (type: JerseyKey) => void }) {
   if (!jerseys.length) return <Card className="special-card-empty"><Medal size={22}/><div><strong>Deine erste Spezialkarte wartet.</strong><p>Übernimm eine Wertung in deiner Liga und sie erscheint automatisch hier.</p></div></Card>
   return <div className="special-card-grid">{jerseys.map(type => {
     const copy = jerseyCardCopy[type]
-    return <button className={`jersey-special-card jersey-special-${type}`} key={type} onClick={() => onSelect(type)}><div className="special-card-top"><Jersey type={type} small/><span>AKTUELL</span></div><div><p>{copy.title}</p><h3>{copy.label}</h3><small>{copy.description}</small></div><b>Öffnen</b></button>
+    return <button className={`jersey-special-card jersey-special-${type}`} key={type} onClick={() => onSelect(type)}><img className="jersey-special-rider" src={riderImageForJersey[type] || '/images/rider-card-cyclist.png'} alt=""/><div className="special-card-top"><Jersey type={type} small/><span>AKTUELL</span></div><div><p>{copy.title}</p><h3>{copy.label}</h3><small>{copy.description}</small></div><b>Spielerkarte öffnen</b></button>
   })}</div>
 }
 

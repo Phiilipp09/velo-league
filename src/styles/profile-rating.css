@@ -17,6 +17,14 @@
   font: 900 5.8px 'Barlow Condensed';
 }
 
+.rider-card-avatar { z-index: 1; }
+.rider-card-avatar > img { display: block; z-index: 1; }
+.rider-card-avatar .jersey { z-index: 2; }
+
+.jersey-special-card { isolation: isolate; }
+.jersey-special-rider { position: absolute; right: -16px; bottom: -8px; z-index: -1; width: 62%; height: 88%; object-fit: contain; object-position: right bottom; opacity: .58; filter: drop-shadow(-8px 5px 14px #000c); }
+.jersey-special-card > div, .jersey-special-card > b { position: relative; z-index: 1; }
+
 @media (max-width: 520px) {
   .performance-rating-head .overall-rating {
     width: 104px;
