@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Crown, SlidersHorizontal, Trophy, X } from 'lucide-react'
 import type { Page } from '../App'
 import { Card, EmptyGuide, Jersey, SectionHeading } from '../components/Ui'
@@ -12,7 +12,6 @@ const dateAfter = (days: number) => new Date(Date.now() - days * 86400000)
 const isYoung = (birthDate?: string | null) => { if (!birthDate) return false; const birth = new Date(birthDate); const today = new Date(); let age = today.getFullYear() - birth.getFullYear(); if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--; return age < 23 }
 const jerseyFor = (filter: Filter, index: number, rider: LeagueRider) => {
   if (index !== 0) return 'plain'
-  if (filter === 'Sprint' && rider.sprint <= 0) return 'plain'
   if (filter === 'Young Rider' && !rider.eligibleYoung) return 'plain'
   return filter === 'Berg' ? 'polka' : filter === 'Sprint' ? 'green' : filter === 'Young Rider' ? 'white' : 'yellow'
 }
@@ -44,7 +43,12 @@ export function League({ onRiderSelect, onNavigate, userId, groups, demo }: { on
   const activeId = userId ? localStorage.getItem(`velo-active-group:${userId}`) : null
   const active = groups.find(group => group.id === activeId) || groups[0]
 
-  useEffect(() => { if (active) void Promise.all([getGroupMembers(active.id), getRides(active.id), getPointAdjustments(active.id)]).then(([nextMembers, nextRides, nextBonuses]) => { setMembers(nextMembers); setRides(nextRides); setBonuses(nextBonuses) }) }, [active?.id])
+  const refreshLeague = useCallback(() => {
+    if (!active) return
+    void Promise.all([getGroupMembers(active.id), getRides(active.id), getPointAdjustments(active.id)]).then(([nextMembers, nextRides, nextBonuses]) => { setMembers(nextMembers); setRides(nextRides); setBonuses(nextBonuses) })
+  }, [active?.id])
+  useEffect(() => { refreshLeague() }, [refreshLeague])
+  useEffect(() => { window.addEventListener('velo-data-changed', refreshLeague); return () => window.removeEventListener('velo-data-changed', refreshLeague) }, [refreshLeague])
   if (demo) return <div className="page"><Card className="empty-inline"><strong>Entwickler-Demo</strong></Card></div>
   if (!active) return <div className="page"><EmptyGuide icon={<Trophy size={24} />} eyebrow="LIGA" title="Deine Liga wartet" text="Erstelle zuerst eine Gruppe." preview={<div />} action={<button className="primary-button" onClick={() => onNavigate?.('group')}>Gruppe erstellen</button>} /></div>
 
