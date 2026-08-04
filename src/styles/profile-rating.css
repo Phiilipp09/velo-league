@@ -26,6 +26,34 @@
 .rider-card-avatar > img { display: block !important; position: absolute !important; inset: 0 !important; z-index: 3 !important; width: 100% !important; height: 100% !important; object-fit: contain !important; object-position: right bottom !important; opacity: 1 !important; visibility: visible !important; }
 .rider-card-avatar .jersey { z-index: 4; }
 
+/* Das Portrait liegt direkt auf der Kartenfläche und ist damit unabhängig
+   von dem alten Avatar-Container der ersten Karten-Version. */
+.rider-card-content::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -34px;
+  right: -14px;
+  bottom: -10px;
+  width: 71%;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  background-size: contain;
+  filter: drop-shadow(-12px 8px 20px rgba(0, 0, 0, .72));
+}
+.rider-card-yellow .rider-card-content::after { background-image: url('/images/rider-card-cyclist.png'); }
+.rider-card-polka .rider-card-content::after { background-image: url('/images/rider-card-polka.png'); }
+.rider-card-white .rider-card-content::after { background-image: url('/images/rider-card-white.png'); }
+.rider-card-red .rider-card-content::after { background-image: url('/images/rider-card-red-clean.png'); }
+.rider-card-violet .rider-card-content::after { background-image: url('/images/rider-card-violet-clean.png'); }
+.rider-card-identity { z-index: 2; }
+.rider-card-avatar { z-index: 3; background-image: none !important; }
+
+@media (max-width: 560px) {
+  .rider-card-content::after { top: -10px; right: -12px; bottom: -2px; width: 77%; }
+}
+
 .jersey-special-card { isolation: isolate; }
 .jersey-special-rider { position: absolute; right: -16px; bottom: -8px; z-index: -1; width: 62%; height: 88%; object-fit: contain; object-position: right bottom; opacity: .58; filter: drop-shadow(-8px 5px 14px #000c); }
 .jersey-special-card > div, .jersey-special-card > b { position: relative; z-index: 1; }
