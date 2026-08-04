@@ -7,8 +7,8 @@ const imageForJersey: Record<string, string> = {
   polka: '/images/rider-card-polka.png',
   green: '/images/rider-card-green-v3.png',
   white: '/images/rider-card-white.png',
-  red: '/images/rider-card-red.png',
-  violet: '/images/rider-card-violet.png',
+  red: '/images/rider-card-red-clean.png',
+  violet: '/images/rider-card-violet-clean.png',
 }
 
 export function RiderDetail({ rider, onClose }: { rider: LeagueRider; onClose: () => void }) {
